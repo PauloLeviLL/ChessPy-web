@@ -3,41 +3,317 @@
 
 <head>
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0f0f10">
 
     <title>ChessPy</title>
 
-    <link
-        rel="stylesheet"
-        href="/static/css/style.css"
-    >
+    <link rel="stylesheet" href="/static/css/style.css">
+
+    <script src="/static/js/board.js" defer></script>
 </head>
 
 <body>
 
-    <main class="game-container">
+<div class="app-container">
 
-        <h1>ChessPy</h1>
+    <main class="main-content">
 
-        <div class="game-info">
-            <p id="status">Carregando partida...</p>
-        </div>
+        <section class="game-panel">
 
-        <div class="board-container">
-            <div id="board" class="board"></div>
-        </div>
+            <header class="panel-header">
+
+                <div class="panel-title">
+                    <div>
+                        <h1>ChessPy</h1>
+                        <p>Partida individual de xadrez</p>
+                    </div>
+                </div>
+
+                <nav class="game-tabs" aria-label="Seções do ChessPy">
+
+                    <button class="tab-button active" type="button" data-feature="play">
+                        Partida
+                    </button>
+
+                    <button class="tab-button" type="button" data-feature="analysis">
+                        Análise de partida
+                    </button>
+
+                    <button class="tab-button" type="button" data-feature="games">
+                        Histórico de partidas
+                    </button>
+
+                    <button class="tab-button" type="button" data-feature="settings">
+                        Configuração de partida
+                    </button>
+
+                </nav>
+
+            </header>
+
+
+            <div class="game-layout">
+
+                <section class="board-section">
+
+                    <div class="board-frame">
+
+                        <div class="board-with-coordinates">
+
+                            <div class="rank-coordinates" id="rank-coordinates">
+                                <span>8</span>
+                                <span>7</span>
+                                <span>6</span>
+                                <span>5</span>
+                                <span>4</span>
+                                <span>3</span>
+                                <span>2</span>
+                                <span>1</span>
+                            </div>
+
+                            <div class="board-wrapper">
+                                <div
+                                    id="board"
+                                    class="board"
+                                    aria-label="Tabuleiro de xadrez"
+                                ></div>
+                            </div>
+
+                            <div class="file-coordinates" id="file-coordinates">
+                                <span>a</span>
+                                <span>b</span>
+                                <span>c</span>
+                                <span>d</span>
+                                <span>e</span>
+                                <span>f</span>
+                                <span>g</span>
+                                <span>h</span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="board-footer">
+
+                        <div id="status" class="game-status">
+                            Carregando partida...
+                        </div>
+
+                        <div id="check-warning" class="check-warning"></div>
+
+                    </div>
+
+                </section>
+
+
+                <aside class="sidebar">
+
+                    <section class="player-card" id="black-player-card">
+
+                        <div class="player-information">
+
+                            <div class="player-avatar black-avatar">
+                                <img
+                                    src="/static/sprites/black/Rei.png"
+                                    alt="Rei preto"
+                                >
+                            </div>
+
+                            <div class="player-details">
+                                <strong>Pretas</strong>
+
+                                <div class="player-subtitle">
+                                    <span id="black-turn-indicator" class="turn-indicator"></span>
+                                    <span>Jogador 2</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div id="timer-black" class="player-timer">
+                            10:00
+                        </div>
+
+                    </section>
+
+
+                    <section class="history-panel">
+
+                        <div class="history-header">
+
+                            <h2>Histórico de jogadas</h2>
+
+                            <div class="history-actions">
+
+                                <button
+                                    id="btn-prev"
+                                    class="icon-button"
+                                    type="button"
+                                    title="Jogada anterior"
+                                    aria-label="Jogada anterior"
+                                    disabled
+                                >
+                                    «
+                                </button>
+
+                                <button
+                                    id="btn-next"
+                                    class="icon-button"
+                                    type="button"
+                                    title="Próxima jogada"
+                                    aria-label="Próxima jogada"
+                                    disabled
+                                >
+                                    »
+                                </button>
+
+                                <span class="history-action-divider"></span>
+
+                                <button
+                                    id="btn-undo"
+                                    class="icon-button"
+                                    type="button"
+                                    title="Desfazer jogada"
+                                    aria-label="Desfazer jogada"
+                                >
+                                    ↶
+                                </button>
+
+                                <button
+                                    id="btn-reset"
+                                    class="icon-button"
+                                    type="button"
+                                    title="Nova partida"
+                                    aria-label="Nova partida"
+                                >
+                                    ⟳
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="history-table-container">
+
+                            <table class="history-table">
+
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Brancas</th>
+                                        <th>Pretas</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="move-history-body">
+                                    <tr>
+                                        <td colspan="3" class="empty-history">
+                                            Nenhuma jogada realizada.
+                                        </td>
+                                    </tr>
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+
+                        <div class="history-position">
+                            <span id="history-position-label">Posição inicial</span>
+                        </div>
+
+
+                        <div class="captures-panel">
+
+                            <div class="capture-row">
+                                <span>Capturas brancas</span>
+                                <span id="white-captures">Nenhuma</span>
+                            </div>
+
+                            <div class="capture-row">
+                                <span>Capturas pretas</span>
+                                <span id="black-captures">Nenhuma</span>
+                            </div>
+
+                        </div>
+
+                    </section>
+
+
+                    <section class="player-card active-player" id="white-player-card">
+
+                        <div class="player-information">
+
+                            <div class="player-avatar white-avatar">
+                                <img
+                                    src="/static/sprites/white/Rei.png"
+                                    alt="Rei branco"
+                                >
+                            </div>
+
+                            <div class="player-details">
+                                <strong>Brancas</strong>
+
+                                <div class="player-subtitle">
+                                    <span id="white-turn-indicator" class="turn-indicator"></span>
+                                    <span>Você — Jogador 1</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div id="timer-white" class="player-timer">
+                            10:00
+                        </div>
+
+                    </section>
+
+                </aside>
+
+            </div>
+
+        </section>
 
     </main>
 
-    <script
-        src="/static/js/board.js"
-        defer
-    ></script>
+
+    <footer class="footer">
+
+        <div class="footer-brand">
+            <strong>ChessPy-Web</strong>
+            <span>v1.1.0</span>
+            <span class="footer-divider">|</span>
+            <span>Jogo de Xadrez</span>
+        </div>
+
+        <div class="footer-links">
+            <a
+                href="https://github.com/PauloLeviLL"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub de PauloLeviLL"
+                title="GitHub"
+                class="github-link"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                        fill="currentColor"
+                        d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.1c-3.1.68-3.76-1.32-3.76-1.32-.5-1.3-1.24-1.65-1.24-1.65-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15.99 1.7 2.59 1.21 3.22.93.1-.72.39-1.21.7-1.49-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.11-1.44 3.04-1.14 3.04-1.14.61 1.54.23 2.68.12 2.96.71.78 1.14 1.78 1.14 3.01 0 4.27-2.6 5.21-5.08 5.49.4.35.75 1.02.75 2.06v3.06c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"
+                    />
+                </svg>
+            </a>
+        </div>
+
+    </footer>
+
+</div>
+
+
+<div id="toast-msg" class="toast-message"></div>
 
 </body>
-
 </html>
