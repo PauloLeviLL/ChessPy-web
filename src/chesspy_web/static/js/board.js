@@ -679,15 +679,17 @@ function createFloatingPiece(piece, size) {
 }
 
 
-function positionDraggedPiece(clientX, clientY) {
+function positionDraggedPiece(clientX, clientY, isTouch = false) {
     if (!dragging || !dragging.image) {
         return;
     }
 
     const rect = boardElement.getBoundingClientRect();
+    // Eleva levemente a peça no toque para o dedo não tampar a casa de destino
+    const touchOffset = isTouch ? (rect.width / 8) * 0.45 : 0;
 
     dragging.image.style.left = `${clientX - rect.left}px`;
-    dragging.image.style.top = `${clientY - rect.top}px`;
+    dragging.image.style.top = `${clientY - rect.top - touchOffset}px`;
 }
 
 
@@ -1031,6 +1033,11 @@ async function createGame() {
 // --------------------------------------------------
 // EVENTOS DO TABULEIRO
 // --------------------------------------------------
+
+// Bloqueia o menu de contexto ao segurar o dedo no tabuleiro
+boardElement.addEventListener("contextmenu", event => {
+    event.preventDefault();
+});
 
 boardElement.addEventListener("pointerdown", event => {
     if (

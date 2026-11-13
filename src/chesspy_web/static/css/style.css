@@ -1,4 +1,3 @@
-
 :root {
     --background: #0f0f10;
     --panel: #18181b;
@@ -24,14 +23,18 @@
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: #3f3f46 #18181b;
+    -webkit-tap-highlight-color: transparent;
 }
 
+html,
 body {
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     background: var(--background);
     color: var(--text);
     font-family: Inter, Arial, sans-serif;
+    overscroll-behavior-y: contain;
 }
 
 button,
@@ -49,6 +52,7 @@ a {
 .app-container {
     width: min(1440px, 100%);
     min-height: 100vh;
+    min-height: 100dvh;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -133,6 +137,7 @@ a {
 
 .board-section {
     min-width: 0;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -178,6 +183,8 @@ a {
     overflow: hidden;
     touch-action: none;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 }
 
 .rank-coordinates,
@@ -247,8 +254,8 @@ a {
 .legal-dot {
     position: absolute;
     z-index: 2;
-    width: 25%;
-    height: 25%;
+    width: 26%;
+    height: 26%;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.35);
     pointer-events: none;
@@ -368,6 +375,10 @@ a {
     background: #e4e4e7;
 }
 
+.player-details {
+    min-width: 0;
+}
+
 .player-details strong {
     display: block;
     font-size: 13px;
@@ -380,6 +391,12 @@ a {
     gap: 7px;
     color: var(--muted);
     font-size: 11px;
+}
+
+.player-subtitle span:last-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .turn-indicator {
@@ -444,6 +461,9 @@ a {
 .icon-button {
     width: 31px;
     height: 29px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background: #202024;
     border: 1px solid var(--border);
     border-radius: 2px;
@@ -608,31 +628,6 @@ a {
     height: 25px;
 }
 
-/* NOTIFICAÇÕES */
-
-.toast-message {
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 50;
-    max-width: min(360px, calc(100vw - 40px));
-    padding: 12px 16px;
-    background: #202024;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    color: var(--text);
-    font-size: 12px;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(8px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.toast-message.visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
 /* CONTÊINER DAS NOTIFICAÇÕES */
 
 #toast-stack {
@@ -640,63 +635,47 @@ a {
     right: 24px;
     bottom: 24px;
     z-index: 99999;
-
     display: flex;
     flex-direction: column-reverse;
     align-items: flex-end;
     gap: 10px;
-
     width: 300px;
     max-width: calc(100vw - 32px);
-
     pointer-events: none;
 }
-
-/* CAIXAS DE NOTIFICAÇÃO */
 
 #toast-stack .toast-msg {
     position: relative;
     display: flex;
     align-items: center;
-
     box-sizing: border-box;
     width: 100%;
     min-height: 52px;
     padding: 14px 16px;
-
     background: #202024;
     border: 1px solid var(--border);
     border-radius: 3px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-
     color: var(--text);
     font-size: 12px;
     line-height: 1.4;
     overflow-wrap: break-word;
-
     opacity: 0;
     transform: translateY(18px) scale(0.97);
-
     transition:
         opacity 0.35s ease,
         transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-
     pointer-events: none;
 }
-
-/* ANIMAÇÃO DE ENTRADA */
 
 #toast-stack .toast-msg.visible {
     opacity: 1;
     transform: translateY(0) scale(1);
 }
 
-/* ANIMAÇÃO DE SAÍDA */
-
 #toast-stack .toast-msg.removing {
     opacity: 0;
     transform: translateY(12px) scale(0.97);
-
     transition:
         opacity 0.25s ease,
         transform 0.25s ease;
@@ -721,84 +700,146 @@ a {
     background: #52525b;
 }
 
-/* RESPONSIVIDADE */
+/* ==================================================
+   RESPONSIVIDADE (TABLET E MOBILE)
+   ================================================== */
 
 @media (max-width: 900px) {
-    .game-layout {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .board-frame,
-    .board-footer {
-        max-width: 600px;
-    }
-
-    .sidebar {
-        width: 100%;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-items: start;
-    }
-
-    .history-panel {
-        grid-column: 1 / -1;
-        grid-row: 1;
-    }
+    /* Mantém uma adaptação básica para tablets */
+    .game-layout { grid-template-columns: minmax(0, 1fr); }
+    .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+    .history-panel { grid-column: 1 / -1; grid-row: 1; }
 }
 
 @media (max-width: 600px) {
-    .main-content,
-    .game-panel {
-        padding: 10px;
+    /* 1. MODO APLICATIVO: Remove rolagem, margens e estica a tela */
+    html, body {
+        height: 100%;
+        overflow: hidden;
     }
-
-    .panel-header {
-        align-items: flex-start;
+    .app-container {
+        height: 100dvh;
+        justify-content: flex-start;
     }
-
-    .game-tabs {
-        width: 100%;
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        padding-bottom: 4px;
-    }
-
-    .tab-button {
-        white-space: nowrap;
-    }
-
-    .game-layout {
-        gap: 15px;
-        padding-top: 14px;
-    }
-
-    .board-frame {
-        padding: 6px;
-    }
-
-    .board-with-coordinates {
-        grid-template-columns: 17px minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr) 17px;
-        column-gap: 3px;
-        row-gap: 2px;
-    }
-
-    .sidebar {
+    .main-content, .game-panel {
+        padding: 0;
+        border: none;
+        border-radius: 0;
         display: flex;
+        flex-direction: column;
+        flex: 1;
     }
 
-    .history-table-container {
-        height: 190px;
+    /* 2. CABEÇALHO: Esconde abas para focar no jogo */
+    .panel-header {
+        padding: 10px 15px;
+        background: #202024;
+        border-bottom: none;
+    }
+    .game-tabs, .panel-title p { display: none; }
+    .panel-title h1 { font-size: 16px; color: #a1a1aa; }
+
+    /* 3. MAGIA DO LAYOUT: "Desempacota" os containers para reordenar */
+    .game-layout {
+        display: flex;
+        flex-direction: column;
+        padding-top: 0;
+        gap: 0;
+        flex: 1;
+        justify-content: center;
+    }
+    .sidebar, .board-section {
+        display: contents; /* Os filhos passam a ser organizados pelo .game-layout */
     }
 
-    .footer {
-        padding: 14px;
+    /* 4. PERFIS DOS JOGADORES: Estilo barra superior/inferior */
+    .player-card {
+        width: 100%;
+        min-height: 56px;
+        padding: 8px 15px;
+        background: #2e3641 !important; /* Fundo contrastante igual a imagem */
+        border: none !important;
+        border-radius: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    #black-player-card { order: 1; } /* Fica em cima do tabuleiro */
+    #white-player-card { order: 3; } /* Fica embaixo do tabuleiro */
+
+    .player-information { gap: 10px; }
+    .player-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 2px;
+        background: white;
+    }
+    .player-details strong { font-size: 14px; color: white; }
+    .player-subtitle { display: none; } /* Esconde texto extra */
+
+    /* 5. RELÓGIOS: Fundo branco quando está ativo */
+    .player-timer {
+        padding: 6px 12px;
+        font-size: 16px;
+        border: none;
+        border-radius: 3px;
+        background: rgba(0, 0, 0, 0.4);
+        color: #e4e4e7;
+    }
+    .player-card.active-player .player-timer {
+        background: white;
+        color: #18181b;
+        font-weight: 800;
     }
 
-    #toast-stack {
-        right: 16px;
-        bottom: 16px;
-        width: 300px;
-        max-width: calc(100vw - 32px);
+    /* 6. TABULEIRO: 100% da largura, colado nas bordas */
+    .board-frame {
+        order: 2;
+        width: 100vw;
+        max-width: 100vw;
+        padding: 0;
     }
+    .board-with-coordinates {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
+        gap: 0;
+    }
+    .board-wrapper { grid-column: 1; grid-row: 1; }
+    .rank-coordinates, .file-coordinates { display: none; } /* Esconde coordenadas externas */
+    .board { border-left: none; border-right: none; }
+
+    /* 7. BARRA INFERIOR DE BOTÕES: Igual nav-bar de app */
+    .history-panel {
+        order: 4;
+        width: 100%;
+        background: #202024;
+        border: none;
+        margin-top: auto;
+    }
+    /* Esconde a tabela de jogadas no celular */
+    .history-table-container, .history-position, .captures-panel, .history-header h2, .board-footer {
+        display: none;
+    }
+    .history-header {
+        min-height: 56px;
+        padding: 0 10px;
+        border: none;
+        justify-content: center;
+    }
+    .history-actions {
+        width: 100%;
+        justify-content: space-around;
+    }
+    .icon-button {
+        width: 45px;
+        height: 45px;
+        background: transparent;
+        border: none;
+        font-size: 24px;
+        color: #a1a1aa;
+    }
+    .history-action-divider { display: none; }
+
+    /* Esconde footer genérico */
+    .footer { display: none; }
 }
