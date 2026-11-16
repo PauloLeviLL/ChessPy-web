@@ -125,6 +125,12 @@ a {
     font-weight: 700;
 }
 
+/* CONTROLE DE VIEWS */
+
+.feature-view[hidden] {
+    display: none !important;
+}
+
 /* LAYOUT DO JOGO (TABULEIRO + SIDEBAR) */
 
 .game-layout {
@@ -578,6 +584,323 @@ a {
     font-size: 17px;
 }
 
+/* ==================================================
+   PÁGINA: HISTÓRICO DE PARTIDAS
+   ================================================== */
+
+.games-toolbar {
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.wireframe-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--subpanel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.wireframe-input::placeholder {
+    color: #71717a;
+}
+
+.wireframe-input:focus {
+    border-color: var(--accent);
+}
+
+.games-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.filter-chip {
+    padding: 7px 11px;
+    background: #202024;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--muted);
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+.filter-chip:hover {
+    background: #2d2d34;
+    color: var(--text);
+}
+
+.filter-chip.active {
+    background: var(--subpanel);
+    border-color: var(--text);
+    color: var(--text);
+    font-weight: 700;
+}
+
+.games-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(270px, 5fr);
+    align-items: start;
+    gap: 24px;
+    padding-top: 18px;
+}
+
+.games-list-panel {
+    background: var(--subpanel);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    min-width: 0;
+}
+
+.games-list-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--subborder);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+}
+
+.games-table-wrapper {
+    max-height: 520px;
+    overflow: auto;
+}
+
+.games-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 12px;
+}
+
+.games-table th {
+    position: sticky;
+    top: 0;
+    padding: 10px 12px;
+    background: var(--subpanel);
+    border-bottom: 1px solid var(--border);
+    color: #71717a;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    font-weight: normal;
+}
+
+.games-table td {
+    padding: 11px 12px;
+    border-bottom: 1px solid #202024;
+    color: #d4d4d8;
+    cursor: pointer;
+}
+
+.games-table tbody tr:hover td {
+    background: #1d1d22;
+}
+
+.games-table tbody tr.selected-row td {
+    background: #232329;
+    border-bottom-color: var(--accent);
+}
+
+.games-table tbody tr.selected-row td:first-child {
+    color: var(--accent-light);
+    font-weight: bold;
+}
+
+.game-code-cell {
+    font-family: "Courier New", monospace;
+    color: var(--muted);
+}
+
+.result-badge {
+    display: inline-block;
+    padding: 3px 7px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+}
+
+.result-badge.win {
+    border-color: var(--success);
+    color: #4ade80;
+}
+
+.result-badge.loss {
+    border-color: var(--danger);
+    color: #f87171;
+}
+
+.result-badge.draw {
+    border-style: dashed;
+    color: var(--muted);
+}
+
+/* PAINEL DIREITO: PREVIEW DA PARTIDA SALVA */
+
+.game-preview-sidebar {
+    padding: 14px;
+    background: var(--subpanel);
+    border: 1px dashed var(--border);
+    border-radius: 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--subborder);
+}
+
+.preview-header strong {
+    font-size: 13px;
+}
+
+.preview-meta {
+    color: var(--muted);
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+}
+
+.mini-board-container {
+    width: 100%;
+    max-width: 240px;
+    margin: 0 auto;
+    aspect-ratio: 1 / 1;
+    border: 1px solid var(--border);
+}
+
+.mini-board {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+}
+
+.mini-square {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mini-square.light {
+    background: var(--board-light);
+}
+
+.mini-square.dark {
+    background: var(--board-dark);
+}
+
+.mini-square img {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+}
+
+.preview-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 4px;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+}
+
+.preview-stat-row {
+    display: flex;
+    justify-content: space-between;
+    color: var(--muted);
+}
+
+.preview-stat-row strong,
+.preview-stat-row span:last-child {
+    color: var(--text);
+}
+
+.preview-pgn-box {
+    padding: 10px;
+    background: #0d0d0f;
+    border: 1px solid var(--subborder);
+    border-radius: 2px;
+}
+
+.preview-pgn-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #71717a;
+    font-family: "Courier New", monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+.preview-pgn-box p {
+    margin: 0;
+    max-height: 76px;
+    overflow-y: auto;
+    color: #d4d4d8;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.preview-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.primary-wireframe-btn,
+.danger-wireframe-btn {
+    padding: 9px 10px;
+    border-radius: 2px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.15s ease;
+}
+
+.primary-wireframe-btn {
+    background: #e4e4e7;
+    border: 1px solid #ffffff;
+    color: #18181b;
+    font-weight: 700;
+}
+
+.primary-wireframe-btn:hover:not(:disabled) {
+    background: #ffffff;
+}
+
+.danger-wireframe-btn {
+    background: #202024;
+    border: 1px solid var(--border);
+    color: #f87171;
+}
+
+.danger-wireframe-btn:hover:not(:disabled) {
+    background: #2c1a1d;
+    border-color: var(--danger);
+}
+
+.primary-wireframe-btn:disabled,
+.danger-wireframe-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* RODAPÉ E LINK DO GITHUB */
 
 .footer {
@@ -705,10 +1028,19 @@ a {
    ================================================== */
 
 @media (max-width: 900px) {
-    /* Mantém uma adaptação básica para tablets */
-    .game-layout { grid-template-columns: minmax(0, 1fr); }
-    .sidebar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-    .history-panel { grid-column: 1 / -1; grid-row: 1; }
+    .game-layout,
+    .games-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .sidebar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+    }
+    .history-panel {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
 }
 
 @media (max-width: 600px) {
@@ -749,7 +1081,7 @@ a {
         justify-content: center;
     }
     .sidebar, .board-section {
-        display: contents; /* Os filhos passam a ser organizados pelo .game-layout */
+        display: contents;
     }
 
     /* 4. PERFIS DOS JOGADORES: Estilo barra superior/inferior */
@@ -757,15 +1089,15 @@ a {
         width: 100%;
         min-height: 56px;
         padding: 8px 15px;
-        background: #2e3641 !important; /* Fundo contrastante igual a imagem */
+        background: #2e3641 !important;
         border: none !important;
         border-radius: 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
     }
-    #black-player-card { order: 1; } /* Fica em cima do tabuleiro */
-    #white-player-card { order: 3; } /* Fica embaixo do tabuleiro */
+    #black-player-card { order: 1; }
+    #white-player-card { order: 3; }
 
     .player-information { gap: 10px; }
     .player-avatar {
@@ -775,7 +1107,7 @@ a {
         background: white;
     }
     .player-details strong { font-size: 14px; color: white; }
-    .player-subtitle { display: none; } /* Esconde texto extra */
+    .player-subtitle { display: none; }
 
     /* 5. RELÓGIOS: Fundo branco quando está ativo */
     .player-timer {
@@ -805,7 +1137,7 @@ a {
         gap: 0;
     }
     .board-wrapper { grid-column: 1; grid-row: 1; }
-    .rank-coordinates, .file-coordinates { display: none; } /* Esconde coordenadas externas */
+    .rank-coordinates, .file-coordinates { display: none; }
     .board { border-left: none; border-right: none; }
 
     /* 7. BARRA INFERIOR DE BOTÕES: Igual nav-bar de app */
@@ -816,7 +1148,6 @@ a {
         border: none;
         margin-top: auto;
     }
-    /* Esconde a tabela de jogadas no celular */
     .history-table-container, .history-position, .captures-panel, .history-header h2, .board-footer {
         display: none;
     }

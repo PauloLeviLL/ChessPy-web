@@ -26,7 +26,7 @@
                 <div class="panel-title">
                     <div>
                         <h1>ChessPy</h1>
-                        <p>Partida individual de xadrez</p>
+                        <p id="panel-subtitle">Partida individual de xadrez</p>
                     </div>
                 </div>
 
@@ -53,166 +53,297 @@
             </header>
 
 
-            <div class="game-layout">
+            <!-- ==========================================
+                 VIEW 1: PARTIDA ATUAL
+                 ========================================== -->
+            <div id="view-play" class="feature-view">
 
-                <section class="board-section">
+                <div class="game-layout">
 
-                    <div class="board-frame">
+                    <section class="board-section">
 
-                        <div class="board-with-coordinates">
+                        <div class="board-frame">
 
-                            <div class="rank-coordinates" id="rank-coordinates">
-                                <span>8</span>
-                                <span>7</span>
-                                <span>6</span>
-                                <span>5</span>
-                                <span>4</span>
-                                <span>3</span>
-                                <span>2</span>
-                                <span>1</span>
-                            </div>
+                            <div class="board-with-coordinates">
 
-                            <div class="board-wrapper">
-                                <div
-                                    id="board"
-                                    class="board"
-                                    aria-label="Tabuleiro de xadrez"
-                                ></div>
-                            </div>
-
-                            <div class="file-coordinates" id="file-coordinates">
-                                <span>a</span>
-                                <span>b</span>
-                                <span>c</span>
-                                <span>d</span>
-                                <span>e</span>
-                                <span>f</span>
-                                <span>g</span>
-                                <span>h</span>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="board-footer">
-
-                        <div id="status" class="game-status">
-                            Carregando partida...
-                        </div>
-
-                        <div id="check-warning" class="check-warning"></div>
-
-                    </div>
-
-                </section>
-
-
-                <aside class="sidebar">
-
-                    <section class="player-card" id="black-player-card">
-
-                        <div class="player-information">
-
-                            <div class="player-avatar black-avatar">
-                                <img
-                                    src="/static/sprites/black/Rei.png"
-                                    alt="Rei preto"
-                                >
-                            </div>
-
-                            <div class="player-details">
-                                <strong>Pretas</strong>
-
-                                <div class="player-subtitle">
-                                    <span id="black-turn-indicator" class="turn-indicator"></span>
-                                    <span>Jogador 2</span>
+                                <div class="rank-coordinates" id="rank-coordinates">
+                                    <span>8</span>
+                                    <span>7</span>
+                                    <span>6</span>
+                                    <span>5</span>
+                                    <span>4</span>
+                                    <span>3</span>
+                                    <span>2</span>
+                                    <span>1</span>
                                 </div>
+
+                                <div class="board-wrapper">
+                                    <div
+                                        id="board"
+                                        class="board"
+                                        aria-label="Tabuleiro de xadrez"
+                                    ></div>
+                                </div>
+
+                                <div class="file-coordinates" id="file-coordinates">
+                                    <span>a</span>
+                                    <span>b</span>
+                                    <span>c</span>
+                                    <span>d</span>
+                                    <span>e</span>
+                                    <span>f</span>
+                                    <span>g</span>
+                                    <span>h</span>
+                                </div>
+
                             </div>
 
                         </div>
 
-                        <div id="timer-black" class="player-timer">
-                            10:00
+
+                        <div class="board-footer">
+
+                            <div id="status" class="game-status">
+                                Carregando partida...
+                            </div>
+
+                            <div id="check-warning" class="check-warning"></div>
+
                         </div>
 
                     </section>
 
 
-                    <section class="history-panel">
+                    <aside class="sidebar">
 
-                        <div class="history-header">
+                        <section class="player-card" id="black-player-card">
 
-                            <h2>Histórico de jogadas</h2>
+                            <div class="player-information">
 
-                            <div class="history-actions">
+                                <div class="player-avatar black-avatar">
+                                    <img
+                                        src="/static/sprites/black/Rei.png"
+                                        alt="Rei preto"
+                                    >
+                                </div>
 
-                                <button
-                                    id="btn-prev"
-                                    class="icon-button"
-                                    type="button"
-                                    title="Jogada anterior"
-                                    aria-label="Jogada anterior"
-                                    disabled
-                                >
-                                    «
-                                </button>
+                                <div class="player-details">
+                                    <strong>Pretas</strong>
 
-                                <button
-                                    id="btn-next"
-                                    class="icon-button"
-                                    type="button"
-                                    title="Próxima jogada"
-                                    aria-label="Próxima jogada"
-                                    disabled
-                                >
-                                    »
-                                </button>
-
-                                <span class="history-action-divider"></span>
-
-                                <button
-                                    id="btn-undo"
-                                    class="icon-button"
-                                    type="button"
-                                    title="Desfazer jogada"
-                                    aria-label="Desfazer jogada"
-                                >
-                                    ↶
-                                </button>
-
-                                <button
-                                    id="btn-reset"
-                                    class="icon-button"
-                                    type="button"
-                                    title="Nova partida"
-                                    aria-label="Nova partida"
-                                >
-                                    ⟳
-                                </button>
+                                    <div class="player-subtitle">
+                                        <span id="black-turn-indicator" class="turn-indicator"></span>
+                                        <span>Jogador 2</span>
+                                    </div>
+                                </div>
 
                             </div>
 
+                            <div id="timer-black" class="player-timer">
+                                10:00
+                            </div>
+
+                        </section>
+
+
+                        <section class="history-panel">
+
+                            <div class="history-header">
+
+                                <h2>Histórico de jogadas</h2>
+
+                                <div class="history-actions">
+
+                                    <button
+                                        id="btn-prev"
+                                        class="icon-button"
+                                        type="button"
+                                        title="Jogada anterior"
+                                        aria-label="Jogada anterior"
+                                        disabled
+                                    >
+                                        «
+                                    </button>
+
+                                    <button
+                                        id="btn-next"
+                                        class="icon-button"
+                                        type="button"
+                                        title="Próxima jogada"
+                                        aria-label="Próxima jogada"
+                                        disabled
+                                    >
+                                        »
+                                    </button>
+
+                                    <span class="history-action-divider"></span>
+
+                                    <button
+                                        id="btn-undo"
+                                        class="icon-button"
+                                        type="button"
+                                        title="Desfazer jogada"
+                                        aria-label="Desfazer jogada"
+                                    >
+                                        ↶
+                                    </button>
+
+                                    <button
+                                        id="btn-reset"
+                                        class="icon-button"
+                                        type="button"
+                                        title="Nova partida"
+                                        aria-label="Nova partida"
+                                    >
+                                        ⟳
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="history-table-container">
+
+                                <table class="history-table">
+
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Brancas</th>
+                                            <th>Pretas</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody id="move-history-body">
+                                        <tr>
+                                            <td colspan="3" class="empty-history">
+                                                Nenhuma jogada realizada.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+
+                            <div class="history-position">
+                                <span id="history-position-label">Posição inicial</span>
+                            </div>
+
+
+                            <div class="captures-panel">
+
+                                <div class="capture-row">
+                                    <span>Capturas brancas</span>
+                                    <span id="white-captures">Nenhuma</span>
+                                </div>
+
+                                <div class="capture-row">
+                                    <span>Capturas pretas</span>
+                                    <span id="black-captures">Nenhuma</span>
+                                </div>
+
+                            </div>
+
+                        </section>
+
+
+                        <section class="player-card active-player" id="white-player-card">
+
+                            <div class="player-information">
+
+                                <div class="player-avatar white-avatar">
+                                    <img
+                                        src="/static/sprites/white/Rei.png"
+                                        alt="Rei branco"
+                                    >
+                                </div>
+
+                                <div class="player-details">
+                                    <strong>Brancas</strong>
+
+                                    <div class="player-subtitle">
+                                        <span id="white-turn-indicator" class="turn-indicator"></span>
+                                        <span>Você — Jogador 1</span>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div id="timer-white" class="player-timer">
+                                10:00
+                            </div>
+
+                        </section>
+
+                    </aside>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==========================================
+                 VIEW 2: HISTÓRICO DE PARTIDAS
+                 ========================================== -->
+            <div id="view-games" class="feature-view" hidden>
+
+                <div class="games-toolbar">
+
+                    <input
+                        type="search"
+                        id="games-search"
+                        class="wireframe-input"
+                        placeholder="Buscar partida por código, data, modo ou desfecho..."
+                        autocomplete="off"
+                    >
+
+                    <div class="games-filters" role="group" aria-label="Filtrar por resultado">
+                        <button type="button" class="filter-chip active" data-filter="all">
+                            Resultado: todos
+                        </button>
+                        <button type="button" class="filter-chip" data-filter="win">
+                            Brancas venceram
+                        </button>
+                        <button type="button" class="filter-chip" data-filter="loss">
+                            Pretas venceram
+                        </button>
+                        <button type="button" class="filter-chip" data-filter="draw">
+                            Empate
+                        </button>
+                    </div>
+
+                </div>
+
+
+                <div class="games-layout">
+
+                    <section class="games-list-panel">
+
+                        <div class="games-list-header">
+                            <span id="games-count-label">0 partidas registradas</span>
+                            <span>Clique para inspecionar</span>
                         </div>
 
+                        <div class="games-table-wrapper">
 
-                        <div class="history-table-container">
-
-                            <table class="history-table">
+                            <table class="games-table">
 
                                 <thead>
                                     <tr>
-                                        <th>#</th>
-                                        <th>Brancas</th>
-                                        <th>Pretas</th>
+                                        <th>Cód.</th>
+                                        <th>Data</th>
+                                        <th>Modo / Tempo</th>
+                                        <th>Jogadas</th>
+                                        <th>Desfecho</th>
                                     </tr>
                                 </thead>
 
-                                <tbody id="move-history-body">
+                                <tbody id="saved-games-body">
                                     <tr>
-                                        <td colspan="3" class="empty-history">
-                                            Nenhuma jogada realizada.
+                                        <td colspan="5" class="empty-history">
+                                            Nenhuma partida registrada.
                                         </td>
                                     </tr>
                                 </tbody>
@@ -221,58 +352,73 @@
 
                         </div>
 
-
-                        <div class="history-position">
-                            <span id="history-position-label">Posição inicial</span>
-                        </div>
-
-
-                        <div class="captures-panel">
-
-                            <div class="capture-row">
-                                <span>Capturas brancas</span>
-                                <span id="white-captures">Nenhuma</span>
-                            </div>
-
-                            <div class="capture-row">
-                                <span>Capturas pretas</span>
-                                <span id="black-captures">Nenhuma</span>
-                            </div>
-
-                        </div>
-
                     </section>
 
 
-                    <section class="player-card active-player" id="white-player-card">
+                    <aside class="game-preview-sidebar">
 
-                        <div class="player-information">
+                        <div class="preview-header">
+                            <strong id="preview-game-title">Selecione uma partida</strong>
+                            <span id="preview-game-date" class="preview-meta">—</span>
+                        </div>
 
-                            <div class="player-avatar white-avatar">
-                                <img
-                                    src="/static/sprites/white/Rei.png"
-                                    alt="Rei branco"
-                                >
+                        <div class="mini-board-container">
+                            <div
+                                id="preview-mini-board"
+                                class="mini-board"
+                                aria-label="Posição final da partida"
+                            ></div>
+                        </div>
+
+                        <div class="preview-stats">
+
+                            <div class="preview-stat-row">
+                                <span>Desfecho</span>
+                                <strong id="preview-game-result">—</strong>
                             </div>
 
-                            <div class="player-details">
-                                <strong>Brancas</strong>
+                            <div class="preview-stat-row">
+                                <span>Controle de tempo</span>
+                                <span id="preview-game-time">—</span>
+                            </div>
 
-                                <div class="player-subtitle">
-                                    <span id="white-turn-indicator" class="turn-indicator"></span>
-                                    <span>Você — Jogador 1</span>
-                                </div>
+                            <div class="preview-stat-row">
+                                <span>Duração em lances</span>
+                                <span id="preview-game-plies">—</span>
                             </div>
 
                         </div>
 
-                        <div id="timer-white" class="player-timer">
-                            10:00
+                        <div class="preview-pgn-box">
+                            <span class="preview-pgn-label">Notação (PGN)</span>
+                            <p id="preview-game-pgn">Nenhuma partida selecionada.</p>
                         </div>
 
-                    </section>
+                        <div class="preview-actions">
 
-                </aside>
+                            <button
+                                type="button"
+                                id="btn-inspect-in-analysis"
+                                class="primary-wireframe-btn"
+                                disabled
+                            >
+                                Abrir na análise
+                            </button>
+
+                            <button
+                                type="button"
+                                id="btn-delete-saved-game"
+                                class="danger-wireframe-btn"
+                                disabled
+                            >
+                                Excluir registro
+                            </button>
+
+                        </div>
+
+                    </aside>
+
+                </div>
 
             </div>
 
@@ -311,8 +457,6 @@
     </footer>
 
 </div>
-
-
 
 </body>
 </html>

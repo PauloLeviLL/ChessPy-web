@@ -1,6 +1,7 @@
 const boardElement = document.getElementById("board");
 const statusElement = document.getElementById("status");
 const checkWarningElement = document.getElementById("check-warning");
+const panelSubtitleElement = document.getElementById("panel-subtitle");
 
 const historyBody = document.getElementById("move-history-body");
 const historyPositionLabel = document.getElementById("history-position-label");
@@ -33,6 +34,7 @@ const pieceNames = {
 
 const ANIMATION_DURATION = 160;
 const INITIAL_TIME = 600;
+const STORAGE_KEY = "chesspy_saved_games";
 
 let gameId = null;
 let gameState = null;
@@ -52,6 +54,12 @@ let blackTime = INITIAL_TIME;
 
 // Posição atualmente visualizada no histórico.
 let viewPly = 0;
+
+// Estado da página de histórico de partidas.
+let savedGames = [];
+let selectedSavedGameId = null;
+let currentOutcomeFilter = "all";
+let currentSearchQuery = "";
 
 
 // --------------------------------------------------
@@ -446,6 +454,12 @@ function startClock() {
                     "Tempo esgotado! Pretas venceram.";
 
                 checkWarningElement.textContent = "TEMPO ESGOTADO";
+
+                saveGameRecord(
+                    gameState,
+                    "loss",
+                    "0-1 (Tempo)"
+                );
             }
 
         } else {
@@ -459,6 +473,12 @@ function startClock() {
                     "Tempo esgotado! Brancas venceram.";
 
                 checkWarningElement.textContent = "TEMPO ESGOTADO";
+
+                saveGameRecord(
+                    gameState,
+                    "win",
+                    "1-0 (Tempo)"
+                );
             }
         }
 
@@ -491,7 +511,6 @@ function showToast(message) {
         document.body.appendChild(stack);
     }
 
-    // Evita repetir uma mensagem que já está visível.
     const alreadyVisible = Array.from(stack.children).some(
         toast => toast.textContent === message
     );
@@ -685,7 +704,6 @@ function positionDraggedPiece(clientX, clientY, isTouch = false) {
     }
 
     const rect = boardElement.getBoundingClientRect();
-    // Eleva levemente a peça no toque para o dedo não tampar a casa de destino
     const touchOffset = isTouch ? (rect.width / 8) * 0.45 : 0;
 
     dragging.image.style.left = `${clientX - rect.left}px`;
@@ -801,7 +819,6 @@ async function makeMove(fromSquare, toSquare, animate = true) {
         return;
     }
 
-    // Se estiver olhando o histórico, retorna à posição atual.
     if (viewPly !== gameState.total_plies) {
         viewPly = gameState.total_plies;
         renderBoard();
@@ -873,8 +890,23 @@ async function makeMove(fromSquare, toSquare, animate = true) {
             gameActive = false;
             stopClock();
 
+            if (gameState.checkmate) {
+                const whiteWon = gameState.turn !== "white";
+
+                saveGameRecord(
+                    gameState,
+                    whiteWon ? "win" : "loss",
+                    whiteWon ? "1-0 (Brancas)" : "0-1 (Pretas)"
+                );
+            } else {
+                saveGameRecord(
+                    gameState,
+                    "draw",
+                    "½-½ (Empate)"
+                );
+            }
+
         } else if (!clockStarted && movingPiece?.color === "white") {
-            // O relógio só começa após a primeira jogada branca.
             clockStarted = true;
             startClock();
         }
@@ -976,7 +1008,6 @@ async function undoMove() {
         applyGameState(data);
 
         if (gameState.total_plies === 0) {
-            // Voltou à posição inicial: relógios pausados.
             resetClock();
 
         } else {
@@ -1031,10 +1062,273 @@ async function createGame() {
 
 
 // --------------------------------------------------
+// HISTÓRICO DE PARTIDAS SALVAS
+// --------------------------------------------------
+
+const savedGamesBody = document.getElementById("saved-games-body");
+const gamesCountLabel = document.getElementById("games-count-label");
+const gamesSearchInput = document.getElementById("games-search");
+
+const previewTitle = document.getElementById("preview-game-title");
+const previewDate = document.getElementById("preview-game-date");
+const previewMiniBoard = document.getElementById("preview-mini-board");
+const previewResult = document.getElementById("preview-game-result");
+const previewTime = document.getElementById("preview-game-time");
+const previewPlies = document.getElementById("preview-game-plies");
+const previewPgn = document.getElementById("preview-game-pgn");
+
+const btnInspectAnalysis = document.getElementById("btn-inspect-in-analysis");
+const btnDeleteSavedGame = document.getElementById("btn-delete-saved-game");
+
+
+function getLocalSavedGames() {
+    try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    } catch {
+        return [];
+    }
+}
+
+
+function saveGameRecord(state, outcome, resultLabel) {
+    if (!state || !state.timeline || state.total_plies === 0) {
+        return;
+    }
+
+    const existing = getLocalSavedGames();
+    const recordId = (gameId || String(Date.now())).slice(0, 6).toUpperCase();
+
+    if (existing.some(game => game.id === recordId)) {
+        return;
+    }
+
+    const pgnParts = (state.history || []).map(
+        move => `${move.number}. ${move.white}${move.black ? " " + move.black : ""}`
+    );
+
+    const record = {
+        id: recordId,
+        date: new Date().toLocaleDateString("pt-BR"),
+        mode: "10+0 Rápida",
+        plies: state.total_plies,
+        outcome,
+        resultLabel,
+        pgn: pgnParts.join(" ") || "Sem lances",
+        finalPieces: state.pieces,
+        timeline: state.timeline,
+        history: state.history
+    };
+
+    existing.unshift(record);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+}
+
+
+async function loadSavedGames() {
+    let apiGames = [];
+
+    try {
+        const response = await fetch("/api/games");
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (Array.isArray(data)) {
+                apiGames = data;
+            }
+        }
+    } catch {
+        // Fallback para armazenamento local enquanto GET /api/games não retornar lista.
+    }
+
+    const localGames = getLocalSavedGames();
+    savedGames = apiGames.length > 0 ? apiGames : localGames;
+
+    if (savedGames.length > 0 && !savedGames.some(game => game.id === selectedSavedGameId)) {
+        selectedSavedGameId = savedGames[0].id;
+    } else if (savedGames.length === 0) {
+        selectedSavedGameId = null;
+    }
+
+    renderSavedGamesList();
+}
+
+
+function renderMiniBoard(piecesMap = {}) {
+    previewMiniBoard.innerHTML = "";
+
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const squareName = getSquareName(row, col);
+            const cell = document.createElement("div");
+            const isLight = (row + col) % 2 === 0;
+
+            cell.className = `mini-square ${isLight ? "light" : "dark"}`;
+
+            const piece = piecesMap[squareName];
+
+            if (piece) {
+                const img = document.createElement("img");
+                img.src = getPieceImage(piece);
+                img.alt = "";
+                cell.appendChild(img);
+            }
+
+            previewMiniBoard.appendChild(cell);
+        }
+    }
+}
+
+
+function renderGamePreview(game) {
+    if (!game) {
+        previewTitle.textContent = "Nenhuma partida selecionada";
+        previewDate.textContent = "—";
+        previewResult.textContent = "—";
+        previewTime.textContent = "—";
+        previewPlies.textContent = "—";
+        previewPgn.textContent = "Jogue e finalize uma partida para registrá-la no histórico.";
+
+        btnInspectAnalysis.disabled = true;
+        btnDeleteSavedGame.disabled = true;
+
+        renderMiniBoard({});
+        return;
+    }
+
+    const fullMoves = Math.ceil(game.plies / 2);
+
+    previewTitle.textContent = `Partida #${game.id}`;
+    previewDate.textContent = game.date;
+    previewResult.textContent = game.resultLabel;
+    previewTime.textContent = game.mode;
+    previewPlies.textContent = `${fullMoves} jogada${fullMoves === 1 ? "" : "s"} (${game.plies} meio-lances)`;
+    previewPgn.textContent = game.pgn;
+
+    btnInspectAnalysis.disabled = false;
+    btnDeleteSavedGame.disabled = false;
+
+    renderMiniBoard(game.finalPieces || {});
+}
+
+
+function renderSavedGamesList() {
+    const query = currentSearchQuery.trim().toLowerCase();
+
+    const filtered = savedGames.filter(game => {
+        const matchesFilter =
+            currentOutcomeFilter === "all" || game.outcome === currentOutcomeFilter;
+
+        const matchesSearch =
+            !query ||
+            game.id.toLowerCase().includes(query) ||
+            game.date.toLowerCase().includes(query) ||
+            game.mode.toLowerCase().includes(query) ||
+            game.resultLabel.toLowerCase().includes(query);
+
+        return matchesFilter && matchesSearch;
+    });
+
+    gamesCountLabel.textContent =
+        `${filtered.length} partida${filtered.length === 1 ? "" : "s"} registrada${filtered.length === 1 ? "" : "s"}`;
+
+    savedGamesBody.innerHTML = "";
+
+    if (filtered.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 5;
+        cell.className = "empty-history";
+        cell.textContent = "Nenhuma partida encontrada.";
+
+        row.appendChild(cell);
+        savedGamesBody.appendChild(row);
+
+        renderGamePreview(null);
+        return;
+    }
+
+    if (!filtered.some(game => game.id === selectedSavedGameId)) {
+        selectedSavedGameId = filtered[0].id;
+    }
+
+    filtered.forEach(game => {
+        const row = document.createElement("tr");
+
+        if (game.id === selectedSavedGameId) {
+            row.classList.add("selected-row");
+        }
+
+        const codeCell = document.createElement("td");
+        codeCell.className = "game-code-cell";
+        codeCell.textContent = `#${game.id}`;
+
+        const dateCell = document.createElement("td");
+        dateCell.textContent = game.date;
+
+        const modeCell = document.createElement("td");
+        modeCell.textContent = game.mode;
+
+        const movesCell = document.createElement("td");
+        movesCell.textContent = `${Math.ceil(game.plies / 2)} jogadas`;
+
+        const outcomeCell = document.createElement("td");
+        const badge = document.createElement("span");
+        badge.className = `result-badge ${game.outcome}`;
+        badge.textContent = game.resultLabel;
+        outcomeCell.appendChild(badge);
+
+        row.appendChild(codeCell);
+        row.appendChild(dateCell);
+        row.appendChild(modeCell);
+        row.appendChild(movesCell);
+        row.appendChild(outcomeCell);
+
+        row.addEventListener("click", () => {
+            selectedSavedGameId = game.id;
+            renderSavedGamesList();
+        });
+
+        savedGamesBody.appendChild(row);
+    });
+
+    const selectedGame = filtered.find(game => game.id === selectedSavedGameId);
+    renderGamePreview(selectedGame);
+}
+
+
+async function deleteSelectedSavedGame() {
+    if (!selectedSavedGameId) {
+        return;
+    }
+
+    const targetId = selectedSavedGameId;
+
+    try {
+        await fetch(`/api/games/${targetId}`, {
+            method: "DELETE"
+        });
+    } catch {
+        // Ignora erro caso a rota DELETE ainda não exista no backend.
+    }
+
+    const updatedLocal = getLocalSavedGames().filter(
+        game => game.id !== targetId
+    );
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocal));
+    selectedSavedGameId = null;
+
+    await loadSavedGames();
+    showToast("Registro removido do histórico.");
+}
+
+
+// --------------------------------------------------
 // EVENTOS DO TABULEIRO
 // --------------------------------------------------
 
-// Bloqueia o menu de contexto ao segurar o dedo no tabuleiro
 boardElement.addEventListener("contextmenu", event => {
     event.preventDefault();
 });
@@ -1068,7 +1362,11 @@ boardElement.addEventListener("pointerdown", event => {
 
 document.addEventListener("pointermove", event => {
     if (dragging) {
-        positionDraggedPiece(event.clientX, event.clientY);
+        positionDraggedPiece(
+            event.clientX,
+            event.clientY,
+            event.pointerType === "touch"
+        );
     }
 });
 
@@ -1104,12 +1402,15 @@ document.addEventListener("pointerup", async event => {
         selectedSquare = null;
         renderBoard();
 
-        // Arrastar e soltar não adiciona animação.
         await makeMove(origin, destination, false);
         return;
     }
 
     if (!destination) {
+        if (selectedSquare) {
+            selectedSquare = null;
+            renderBoard();
+        }
         return;
     }
 
@@ -1163,7 +1464,7 @@ document.addEventListener("pointercancel", () => {
 
 
 // --------------------------------------------------
-// CLIQUES NO HISTÓRICO
+// CLIQUES NO HISTÓRICO DA PARTIDA ATUAL
 // --------------------------------------------------
 
 historyBody.addEventListener("click", event => {
@@ -1185,7 +1486,7 @@ historyBody.addEventListener("click", event => {
 
 
 // --------------------------------------------------
-// BOTÕES DA PARTIDA
+// BOTÕES DA PARTIDA E DO HISTÓRICO DE PARTIDAS
 // --------------------------------------------------
 
 undoButton.addEventListener("click", undoMove);
@@ -1194,28 +1495,90 @@ resetButton.addEventListener("click", resetGame);
 prevButton.addEventListener("click", previousPosition);
 nextButton.addEventListener("click", nextPosition);
 
+if (gamesSearchInput) {
+    gamesSearchInput.addEventListener("input", event => {
+        currentSearchQuery = event.target.value;
+        renderSavedGamesList();
+    });
+}
+
+document.querySelectorAll(".filter-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+        document.querySelectorAll(".filter-chip").forEach(
+            item => item.classList.remove("active")
+        );
+
+        chip.classList.add("active");
+        currentOutcomeFilter = chip.dataset.filter;
+        renderSavedGamesList();
+    });
+});
+
+if (btnDeleteSavedGame) {
+    btnDeleteSavedGame.addEventListener("click", deleteSelectedSavedGame);
+}
+
+if (btnInspectAnalysis) {
+    btnInspectAnalysis.addEventListener("click", () => {
+        showToast("A aba Análise de partida será implementada na próxima etapa.");
+    });
+}
+
 
 // --------------------------------------------------
-// BOTÕES DE FUNCIONALIDADES
+// NAVEGAÇÃO ENTRE ABAS
 // --------------------------------------------------
 
-document.querySelectorAll("[data-feature]").forEach(button => {
-    button.addEventListener("click", () => {
-        const feature = button.dataset.feature;
+function switchFeatureTab(feature) {
+    const viewMap = {
+        play: document.getElementById("view-play"),
+        games: document.getElementById("view-games")
+    };
 
-        if (feature === "play") {
-            return;
-        }
+    const subtitles = {
+        play: "Partida individual de xadrez",
+        games: "Registro e revisão de partidas concluídas"
+    };
 
+    if (!viewMap[feature]) {
         const featureNames = {
             analysis: "Análise de partida",
-            games: "Histórico de partidas",
             settings: "Configuração de partida"
         };
 
         showToast(
             `${featureNames[feature]} será implementado em uma próxima etapa.`
         );
+        return;
+    }
+
+    document.querySelectorAll("[data-feature]").forEach(button => {
+        button.classList.toggle(
+            "active",
+            button.dataset.feature === feature
+        );
+    });
+
+    Object.entries(viewMap).forEach(([key, section]) => {
+        if (section) {
+            section.hidden = key !== feature;
+        }
+    });
+
+    if (panelSubtitleElement && subtitles[feature]) {
+        panelSubtitleElement.textContent = subtitles[feature];
+    }
+
+    if (feature === "games") {
+        loadSavedGames();
+    } else if (feature === "play") {
+        renderBoard();
+    }
+}
+
+document.querySelectorAll("[data-feature]").forEach(button => {
+    button.addEventListener("click", () => {
+        switchFeatureTab(button.dataset.feature);
     });
 });
 
