@@ -30,25 +30,43 @@
                     </div>
                 </div>
 
-                <nav class="game-tabs" aria-label="Seções do ChessPy">
+                <div class="header-controls">
 
-                    <button class="tab-button active" type="button" data-feature="play">
-                        Partida
+                    <nav class="game-tabs" aria-label="Seções do ChessPy">
+
+                        <button class="tab-button active" type="button" data-feature="play">
+                            Partida
+                        </button>
+
+                        <button class="tab-button" type="button" data-feature="analysis">
+                            Análise de partida
+                        </button>
+
+                        <button class="tab-button" type="button" data-feature="games">
+                            Histórico de partidas
+                        </button>
+
+                        <button class="tab-button" type="button" data-feature="settings">
+                            Configuração de partida
+                        </button>
+
+                    </nav>
+
+                    <button
+                        type="button"
+                        id="btn-board-theme"
+                        class="board-theme-button"
+                        title="Alternar cor do tabuleiro"
+                        aria-label="Alternar cor do tabuleiro"
+                    >
+                        <span class="theme-swatch-pair" aria-hidden="true">
+                            <i class="swatch-light"></i>
+                            <i class="swatch-dark"></i>
+                        </span>
+                        <span id="board-theme-label">Tabuleiro: Padrão</span>
                     </button>
 
-                    <button class="tab-button" type="button" data-feature="analysis">
-                        Análise de partida
-                    </button>
-
-                    <button class="tab-button" type="button" data-feature="games">
-                        Histórico de partidas
-                    </button>
-
-                    <button class="tab-button" type="button" data-feature="settings">
-                        Configuração de partida
-                    </button>
-
-                </nav>
+                </div>
 
             </header>
 

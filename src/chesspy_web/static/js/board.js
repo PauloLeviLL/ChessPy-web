@@ -66,6 +66,22 @@ let currentSearchQuery = "";
 // POSIÇÕES E COORDENADAS
 // --------------------------------------------------
 
+const BOARD_THEMES = {
+    default: {
+        label: "Padrão",
+        light: [75, 86, 102],
+        dark: [46, 54, 65]
+    },
+    purple: {
+        label: "Roxo",
+        light: [251, 250, 255],
+        dark: [212, 187, 252]
+    }
+};
+
+let currentBoardTheme = "default";
+
+
 function getSquareName(row, col) {
     return "abcdefgh"[col] + (8 - row);
 }
@@ -104,9 +120,11 @@ function getSquareAtPoint(x, y) {
 
 
 function getBaseSquareColor(row, col) {
+    const theme = BOARD_THEMES[currentBoardTheme] || BOARD_THEMES.default;
+
     return (row + col) % 2 === 0
-        ? [75, 86, 102]
-        : [46, 54, 65];
+        ? theme.light
+        : theme.dark;
 }
 
 
@@ -1582,6 +1600,28 @@ document.querySelectorAll("[data-feature]").forEach(button => {
     });
 });
 
+document.addEventListener("click", event => {
+    const themeBtn = event.target.closest("#btn-board-theme");
+    if (!themeBtn) {
+        return;
+    }
+
+    currentBoardTheme =
+        currentBoardTheme === "default" ? "purple" : "default";
+
+    if (currentBoardTheme === "purple") {
+        document.documentElement.setAttribute("data-board-theme", "purple");
+    } else {
+        document.documentElement.removeAttribute("data-board-theme");
+    }
+
+    const label = document.getElementById("board-theme-label");
+    if (label) {
+        label.textContent = `Tabuleiro: ${BOARD_THEMES[currentBoardTheme].label}`;
+    }
+
+    renderBoard();
+});
 
 // --------------------------------------------------
 // INICIALIZAÇÃO

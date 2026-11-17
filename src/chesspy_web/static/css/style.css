@@ -17,6 +17,65 @@
     --danger: #ef4444;
 }
 
+/* TEMA ALTERNATIVO DO TABULEIRO */
+:root[data-board-theme="purple"] .legal-dot {
+    background: rgba(60, 9, 108, 0.30);
+}
+
+.board-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.board-theme-button {
+    position: relative;
+    z-index: 5;
+    width: 185px;
+    min-width: 185px;
+    max-width: 185px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 6px 8px;
+    background: #202024;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--muted);
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.board-theme-button:hover {
+    background: #2e2e34;
+    color: var(--text);
+    border-color: var(--text);
+}
+
+.theme-swatch-pair {
+    display: inline-flex;
+    border: 1px solid var(--border);
+}
+
+.theme-swatch-pair i {
+    display: block;
+    width: 9px;
+    height: 9px;
+}
+
+.theme-swatch-pair .swatch-light {
+    background: var(--board-light);
+}
+
+.theme-swatch-pair .swatch-dark {
+    background: var(--board-dark);
+}
+
 /* RESET E BASE */
 
 * {
@@ -100,6 +159,13 @@ a {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .tab-button {
@@ -1062,14 +1128,22 @@ a {
         flex: 1;
     }
 
-    /* 2. CABEÇALHO: Esconde abas para focar no jogo */
+    /* 2. CABEÇALHO: Esconde abas para focar no jogo, mas mantém o botão de cor */
     .panel-header {
-        padding: 10px 15px;
+        padding: 8px 15px;
         background: #202024;
         border-bottom: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    .game-tabs, .panel-title p { display: none; }
-    .panel-title h1 { font-size: 16px; color: #a1a1aa; }
+    .game-tabs, .panel-title p {
+        display: none;
+    }
+    .panel-title h1 {
+        font-size: 16px;
+        color: #a1a1aa;
+    }
 
     /* 3. MAGIA DO LAYOUT: "Desempacota" os containers para reordenar */
     .game-layout {
