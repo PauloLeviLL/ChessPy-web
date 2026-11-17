@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
@@ -9,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from chesspy_web.controller.game_controller import GameController
-from database import (
+from chesspy_web.database import (
     delete_saved_game,
     init_db,
     list_saved_games,
@@ -17,25 +18,33 @@ from database import (
 )
 
 
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 app = FastAPI(
     title="ChessPy-Web",
     description="Jogo de xadrez para navegador.",
-    version="1.1.0",
+    version="1.2.1",
 )
 
 init_db()
 
 app.mount(
     "/static",
-    StaticFiles(directory=BASE_DIR / "static"),
+    StaticFiles(directory=BASE_DIR / "chesspy_web" / "static"),
     name="static",
 )
 
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
+templates = Jinja2Templates(directory=BASE_DIR / "chesspy_web" / "templates")
 
 games: dict[str, GameController] = {}
+game_configs: dict[str, dict] = {}
+
+
+class CreateGameRequest(BaseModel):
+    mode: str = "pvp"
+    bot_level: int = 4
+    player_color: str = "white"
+    time_control: str = "10+0"
 
 
 class MoveRequest(BaseModel):
@@ -212,12 +221,14 @@ def remove_saved_game(record_id: str):
 
 
 @app.post("/api/games")
-def create_game():
+def create_game(config: CreateGameRequest | None = None):
     game_id = str(uuid4())
     games[game_id] = GameController()
+    game_configs[game_id] = (config or CreateGameRequest()).model_dump()
 
     return {
         "game_id": game_id,
+        "config": game_configs[game_id],
         "state": get_game_state(games[game_id]),
     }
 
@@ -252,7 +263,6 @@ def make_move(game_id: str, move_data: MoveRequest):
 
     move_uci = move_data.from_square + move_data.to_square
 
-    # Promoção automática para rainha.
     if (
         piece.piece_type == chess.PAWN
         and chess.square_rank(to_square) in (0, 7)
@@ -263,6 +273,30 @@ def make_move(game_id: str, move_data: MoveRequest):
         raise HTTPException(
             status_code=400,
             detail="Movimento ilegal.",
+        )
+
+    return get_game_state(game)
+
+
+@app.post("/api/games/{game_id}/bot-move")
+def make_bot_move(game_id: str):
+    game = get_game(game_id)
+    board = game.board.board
+
+    legal_moves = list(board.legal_moves)
+    if not legal_moves:
+        raise HTTPException(
+            status_code=400,
+            detail="Não há movimentos legais para o Bot.",
+        )
+
+    chosen_move = random.choice(legal_moves)
+    move_uci = chosen_move.uci()
+
+    if not game.play(move_uci):
+        raise HTTPException(
+            status_code=400,
+            detail="Falha ao executar lance do Bot.",
         )
 
     return get_game_state(game)

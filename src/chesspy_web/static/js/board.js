@@ -2,6 +2,12 @@ const boardElement = document.getElementById("board");
 const statusElement = document.getElementById("status");
 const checkWarningElement = document.getElementById("check-warning");
 const panelSubtitleElement = document.getElementById("panel-subtitle");
+const playTabButton = document.getElementById("tab-play");
+const newGameAfterEndButton = document.getElementById("btn-new-game-after-end");
+
+const rankCoordinatesElement = document.getElementById("rank-coordinates");
+const fileCoordinatesElement = document.getElementById("file-coordinates");
+const playSidebarElement = document.getElementById("play-sidebar");
 
 const historyBody = document.getElementById("move-history-body");
 const historyPositionLabel = document.getElementById("history-position-label");
@@ -14,6 +20,9 @@ const blackIndicator = document.getElementById("black-turn-indicator");
 
 const whitePlayerCard = document.getElementById("white-player-card");
 const blackPlayerCard = document.getElementById("black-player-card");
+
+const whitePlayerRole = document.getElementById("white-player-role");
+const blackPlayerRole = document.getElementById("black-player-role");
 
 const whiteCapturesElement = document.getElementById("white-captures");
 const blackCapturesElement = document.getElementById("black-captures");
@@ -32,10 +41,39 @@ const pieceNames = {
     6: "Rei"
 };
 
+const BOT_LEVELS = {
+    1:  { name: "Iniciante",     elo: "~600 ELO" },
+    2:  { name: "Novato",        elo: "~800 ELO" },
+    3:  { name: "Casual",        elo: "~1000 ELO" },
+    4:  { name: "Intermediário", elo: "~1200 ELO" },
+    5:  { name: "Clube",         elo: "~1400 ELO" },
+    6:  { name: "Tático",        elo: "~1600 ELO" },
+    7:  { name: "Avançado",      elo: "~1800 ELO" },
+    8:  { name: "Competitivo",   elo: "~2000 ELO" },
+    9:  { name: "Especialista",  elo: "~2200 ELO" },
+    10: { name: "Mestre",        elo: "~2400 ELO" }
+};
+
 const ANIMATION_DURATION = 160;
-const INITIAL_TIME = 600;
+
+// Configuração ativa e rascunho da tela de Configuração de partida.
+let draftConfig = {
+    mode: "pvp",
+    botLevel: 4,
+    playerColor: "white",
+    timeLabel: "10+0",
+    timeCategory: "Rápida",
+    baseSeconds: 600,
+    incrementSeconds: 0,
+    flipped: false
+};
+
+let activeConfig = null;
+let isMatchConfigured = false;
+let resolvedHumanColor = "white";
 
 let gameId = null;
+let sessionRecordId = null;
 let gameState = null;
 
 let selectedSquare = null;
@@ -43,13 +81,13 @@ let dragging = null;
 let animation = null;
 
 let busy = false;
-let gameActive = true;
+let gameActive = false;
 
 let clockInterval = null;
 let clockStarted = false;
 
-let whiteTime = INITIAL_TIME;
-let blackTime = INITIAL_TIME;
+let whiteTime = 600;
+let blackTime = 600;
 
 // Posição atualmente visualizada no histórico.
 let viewPly = 0;
@@ -61,8 +99,13 @@ let currentOutcomeFilter = "all";
 let currentSearchQuery = "";
 
 
+function generateRecordId() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+
 // --------------------------------------------------
-// POSIÇÕES E COORDENADAS
+// POSIÇÕES E COORDENADAS (COM SUPORTE A INVERSÃO)
 // --------------------------------------------------
 
 const BOARD_THEMES = {
@@ -81,8 +124,16 @@ const BOARD_THEMES = {
 let currentBoardTheme = "default";
 
 
-function getSquareName(row, col) {
-    return "abcdefgh"[col] + (8 - row);
+function isBoardFlipped() {
+    return Boolean(activeConfig?.flipped);
+}
+
+
+function getSquareName(visualRow, visualCol) {
+    const boardRow = isBoardFlipped() ? 7 - visualRow : visualRow;
+    const boardCol = isBoardFlipped() ? 7 - visualCol : visualCol;
+
+    return "abcdefgh"[boardCol] + (8 - boardRow);
 }
 
 
@@ -99,12 +150,15 @@ function getSquareCenter(squareName) {
     const rect = boardElement.getBoundingClientRect();
     const squareSize = rect.width / 8;
 
-    const col = "abcdefgh".indexOf(squareName[0]);
-    const row = 8 - Number(squareName[1]);
+    const boardCol = "abcdefgh".indexOf(squareName[0]);
+    const boardRow = 8 - Number(squareName[1]);
+
+    const visualCol = isBoardFlipped() ? 7 - boardCol : boardCol;
+    const visualRow = isBoardFlipped() ? 7 - boardRow : boardRow;
 
     return {
-        x: col * squareSize + squareSize / 2,
-        y: row * squareSize + squareSize / 2
+        x: visualCol * squareSize + squareSize / 2,
+        y: visualRow * squareSize + squareSize / 2
     };
 }
 
@@ -118,10 +172,12 @@ function getSquareAtPoint(x, y) {
 }
 
 
-function getBaseSquareColor(row, col) {
+function getBaseSquareColor(visualRow, visualCol) {
+    const boardRow = isBoardFlipped() ? 7 - visualRow : visualRow;
+    const boardCol = isBoardFlipped() ? 7 - visualCol : visualCol;
     const theme = BOARD_THEMES[currentBoardTheme] || BOARD_THEMES.default;
 
-    return (row + col) % 2 === 0
+    return (boardRow + boardCol) % 2 === 0
         ? theme.light
         : theme.dark;
 }
@@ -133,6 +189,51 @@ function blendColor(base, overlay, alpha) {
             channel * (1 - alpha) + overlay[index] * alpha
         )
     );
+}
+
+
+function updateBoardOrientationUI() {
+    const flipped = isBoardFlipped();
+
+    if (rankCoordinatesElement) {
+        const ranks = flipped
+            ? ["1", "2", "3", "4", "5", "6", "7", "8"]
+            : ["8", "7", "6", "5", "4", "3", "2", "1"];
+        rankCoordinatesElement.innerHTML = ranks.map(r => `<span>${r}</span>`).join("");
+    }
+
+    if (fileCoordinatesElement) {
+        const files = flipped
+            ? ["h", "g", "f", "e", "d", "c", "b", "a"]
+            : ["a", "b", "c", "d", "e", "f", "g", "h"];
+        fileCoordinatesElement.innerHTML = files.map(f => `<span>${f}</span>`).join("");
+    }
+
+    if (playSidebarElement) {
+        playSidebarElement.classList.toggle("flipped-players", flipped);
+    }
+}
+
+
+function updatePlayerLabels() {
+    if (!activeConfig) {
+        return;
+    }
+
+    if (activeConfig.mode === "bot") {
+        const botDesc = `Bot Nível ${activeConfig.botLevel}`;
+
+        if (resolvedHumanColor === "white") {
+            whitePlayerRole.textContent = "Você";
+            blackPlayerRole.textContent = botDesc;
+        } else {
+            whitePlayerRole.textContent = botDesc;
+            blackPlayerRole.textContent = "Você";
+        }
+    } else {
+        whitePlayerRole.textContent = "Você — Jogador 1";
+        blackPlayerRole.textContent = "Jogador 2";
+    }
 }
 
 
@@ -158,6 +259,15 @@ function getLegalDestinations(square) {
 }
 
 
+function isBotTurn() {
+    if (!activeConfig || activeConfig.mode !== "bot" || !gameState) {
+        return false;
+    }
+
+    return gameState.turn !== resolvedHumanColor;
+}
+
+
 // --------------------------------------------------
 // STATUS DA PARTIDA
 // --------------------------------------------------
@@ -167,6 +277,10 @@ function updateStatus() {
 
     if (!displayedState) {
         return;
+    }
+
+    if (newGameAfterEndButton) {
+        newGameAfterEndButton.hidden = !isMatchConfigured || gameActive;
     }
 
     if (viewPly !== gameState.total_plies) {
@@ -193,10 +307,14 @@ function updateStatus() {
         return;
     }
 
-    statusElement.textContent =
-        displayedState.turn === "white"
-            ? "Vez das brancas"
-            : "Vez das pretas";
+    if (isBotTurn() && gameActive) {
+        statusElement.textContent = `Bot (Nível ${activeConfig.botLevel}) pensando...`;
+    } else {
+        statusElement.textContent =
+            displayedState.turn === "white"
+                ? "Vez das brancas"
+                : "Vez das pretas";
+    }
 
     checkWarningElement.textContent =
         displayedState.check_square ? "⚠ Xeque!" : "";
@@ -294,7 +412,7 @@ function updateHistoryControls() {
     prevButton.disabled = busy || viewPly <= 0;
     nextButton.disabled = busy || viewPly >= total;
 
-    undoButton.disabled = busy || total === 0;
+    undoButton.disabled = busy || !gameActive || total === 0;
     resetButton.disabled = busy;
 
     if (viewPly === 0) {
@@ -416,10 +534,19 @@ function renderCaptures() {
 
 
 // --------------------------------------------------
-// RELÓGIOS
+// RELÓGIOS (COM ACRÉSCIMO E MODO SEM TEMPO)
 // --------------------------------------------------
 
+function isUntimedMatch() {
+    return !activeConfig || activeConfig.baseSeconds === 0;
+}
+
+
 function formatTime(seconds) {
+    if (isUntimedMatch()) {
+        return "∞";
+    }
+
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
 
@@ -435,8 +562,9 @@ function renderTimers() {
     whiteTimerElement.textContent = formatTime(whiteTime);
     blackTimerElement.textContent = formatTime(blackTime);
 
-    whiteTimerElement.classList.toggle("low-time", whiteTime <= 30);
-    blackTimerElement.classList.toggle("low-time", blackTime <= 30);
+    const untimed = isUntimedMatch();
+    whiteTimerElement.classList.toggle("low-time", !untimed && whiteTime <= 30);
+    blackTimerElement.classList.toggle("low-time", !untimed && blackTime <= 30);
 }
 
 
@@ -449,7 +577,7 @@ function stopClock() {
 
 
 function startClock() {
-    if (!clockStarted || !gameActive || !gameState) {
+    if (isUntimedMatch() || !clockStarted || !gameActive || !gameState) {
         return;
     }
 
@@ -471,6 +599,8 @@ function startClock() {
                     "Tempo esgotado! Pretas venceram.";
 
                 checkWarningElement.textContent = "TEMPO ESGOTADO";
+                updateStatus();
+                updateHistoryControls();
 
                 saveGameRecord(
                     gameState,
@@ -490,6 +620,8 @@ function startClock() {
                     "Tempo esgotado! Brancas venceram.";
 
                 checkWarningElement.textContent = "TEMPO ESGOTADO";
+                updateStatus();
+                updateHistoryControls();
 
                 saveGameRecord(
                     gameState,
@@ -506,8 +638,9 @@ function startClock() {
 
 
 function resetClock() {
-    whiteTime = INITIAL_TIME;
-    blackTime = INITIAL_TIME;
+    const initial = activeConfig ? activeConfig.baseSeconds : 600;
+    whiteTime = initial;
+    blackTime = initial;
     clockStarted = false;
 
     stopClock();
@@ -733,8 +866,11 @@ function positionDraggedPiece(clientX, clientY, isTouch = false) {
 // --------------------------------------------------
 
 function startDragging(squareName, event) {
-    const displayedState = getDisplayedState();
+    if (!isMatchConfigured || isBotTurn()) {
+        return false;
+    }
 
+    const displayedState = getDisplayedState();
     const piece = displayedState.pieces[squareName];
 
     if (!piece || piece.color !== displayedState.turn) {
@@ -822,16 +958,101 @@ function applyGameState(data) {
 
 
 // --------------------------------------------------
-// MOVIMENTOS
+// MOVIMENTOS (HUMANO + RESPOSTA DO BOT)
 // --------------------------------------------------
+
+async function triggerBotMoveIfNeeded() {
+    if (!gameActive || !isBotTurn() || !gameState || !gameState.legal_moves?.length) {
+        return;
+    }
+
+    busy = true;
+    updateStatus();
+    updateHistoryControls();
+
+    try {
+        await new Promise(resolve => setTimeout(resolve, 350));
+
+        const response = await fetch(`/api/games/${gameId}/bot-move`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ level: activeConfig.botLevel })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Erro no lance do Bot.");
+        }
+
+        const lastMove = data.last_move;
+        const movingPiece = lastMove ? gameState.pieces[lastMove.from] : null;
+
+        gameState = data;
+        viewPly = gameState.total_plies;
+        selectedSquare = null;
+
+        if (!isUntimedMatch() && activeConfig.incrementSeconds > 0 && clockStarted) {
+            if (movingPiece?.color === "white") {
+                whiteTime += activeConfig.incrementSeconds;
+            } else if (movingPiece?.color === "black") {
+                blackTime += activeConfig.incrementSeconds;
+            }
+            renderTimers();
+        }
+
+        if (movingPiece && lastMove) {
+            animation = {
+                from: lastMove.from,
+                to: lastMove.to,
+                piece: movingPiece,
+                image: null
+            };
+            renderBoard();
+            await runMoveAnimation();
+        } else {
+            renderBoard();
+        }
+
+        if (gameState.checkmate || gameState.stalemate) {
+            gameActive = false;
+            stopClock();
+            updateStatus();
+
+            if (gameState.checkmate) {
+                const whiteWon = gameState.turn !== "white";
+                await saveGameRecord(
+                    gameState,
+                    whiteWon ? "win" : "loss",
+                    whiteWon ? "1-0 (Brancas)" : "0-1 (Pretas)"
+                );
+            } else {
+                await saveGameRecord(gameState, "draw", "½-½ (Empate)");
+            }
+        } else if (!clockStarted) {
+            clockStarted = true;
+            startClock();
+        }
+    } catch (error) {
+        showToast(error.message);
+        console.error(error);
+    } finally {
+        busy = false;
+        updateStatus();
+        updateHistoryControls();
+    }
+}
+
 
 async function makeMove(fromSquare, toSquare, animate = true) {
     if (
+        !isMatchConfigured ||
         busy ||
         !gameId ||
         !gameActive ||
         gameState.checkmate ||
-        gameState.stalemate
+        gameState.stalemate ||
+        isBotTurn()
     ) {
         return;
     }
@@ -887,6 +1108,15 @@ async function makeMove(fromSquare, toSquare, animate = true) {
         viewPly = gameState.total_plies;
         selectedSquare = null;
 
+        if (!isUntimedMatch() && activeConfig.incrementSeconds > 0 && clockStarted) {
+            if (movingPiece?.color === "white") {
+                whiteTime += activeConfig.incrementSeconds;
+            } else if (movingPiece?.color === "black") {
+                blackTime += activeConfig.incrementSeconds;
+            }
+            renderTimers();
+        }
+
         if (animate && movingPiece) {
             animation = {
                 from: fromSquare,
@@ -906,6 +1136,7 @@ async function makeMove(fromSquare, toSquare, animate = true) {
         if (gameState.checkmate || gameState.stalemate) {
             gameActive = false;
             stopClock();
+            updateStatus();
 
             if (gameState.checkmate) {
                 const whiteWon = gameState.turn !== "white";
@@ -941,6 +1172,10 @@ async function makeMove(fromSquare, toSquare, animate = true) {
         busy = false;
         updateHistoryControls();
     }
+
+    if (gameActive && isBotTurn()) {
+        await triggerBotMoveIfNeeded();
+    }
 }
 
 
@@ -948,12 +1183,35 @@ async function makeMove(fromSquare, toSquare, animate = true) {
 // NOVA PARTIDA / REINICIAR
 // --------------------------------------------------
 
+function goToNewGameSetup() {
+    stopClock();
+    isMatchConfigured = false;
+    gameActive = false;
+
+    if (playTabButton) {
+        playTabButton.disabled = true;
+    }
+
+    if (newGameAfterEndButton) {
+        newGameAfterEndButton.hidden = true;
+    }
+
+    switchFeatureTab("settings");
+}
+
+
 async function resetGame() {
-    if (busy || !gameId) {
+    if (busy || !gameId || !isMatchConfigured) {
         return;
     }
 
-    if (gameState && gameState.total_plies > 0 && gameActive) {
+    // Se a partida já terminou (xeque-mate, empate ou tempo), redireciona para Configurar nova partida.
+    if (!gameActive) {
+        goToNewGameSetup();
+        return;
+    }
+
+    if (gameState && gameState.total_plies > 0) {
         await saveGameRecord(gameState, "draw", "½-½ (Interrompida)");
     }
 
@@ -976,7 +1234,8 @@ async function resetGame() {
             );
         }
 
-        gameId = `${gameId.split("-")[0]}-${Date.now()}`;
+        // Mantém o gameId do backend intacto e gera apenas um novo ID de registro para o SQLite.
+        sessionRecordId = generateRecordId();
 
         stopClock();
         resetClock();
@@ -993,6 +1252,10 @@ async function resetGame() {
         busy = false;
         updateHistoryControls();
     }
+
+    if (gameActive && isBotTurn()) {
+        await triggerBotMoveIfNeeded();
+    }
 }
 
 
@@ -1004,6 +1267,8 @@ async function undoMove() {
     if (
         busy ||
         !gameId ||
+        !isMatchConfigured ||
+        !gameActive ||
         gameState.total_plies === 0
     ) {
         return;
@@ -1057,13 +1322,42 @@ async function undoMove() {
 
 
 // --------------------------------------------------
-// CRIAR PARTIDA
+// INICIAR PARTIDA A PARTIR DA CONFIGURAÇÃO
 // --------------------------------------------------
 
-async function createGame() {
+async function startConfiguredGame() {
+    if (busy) {
+        return;
+    }
+
+    if (isMatchConfigured && gameState && gameState.total_plies > 0 && gameActive) {
+        await saveGameRecord(gameState, "draw", "½-½ (Interrompida)");
+    }
+
+    activeConfig = { ...draftConfig };
+
+    if (activeConfig.mode === "bot") {
+        if (activeConfig.playerColor === "random") {
+            resolvedHumanColor = Math.random() < 0.5 ? "white" : "black";
+        } else {
+            resolvedHumanColor = activeConfig.playerColor;
+        }
+    } else {
+        resolvedHumanColor = "white";
+    }
+
+    busy = true;
+
     try {
         const response = await fetch("/api/games", {
-            method: "POST"
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                mode: activeConfig.mode,
+                bot_level: activeConfig.botLevel,
+                player_color: resolvedHumanColor,
+                time_control: activeConfig.timeLabel
+            })
         });
 
         if (!response.ok) {
@@ -1073,13 +1367,42 @@ async function createGame() {
         const data = await response.json();
 
         gameId = data.game_id;
+        sessionRecordId = generateRecordId();
+        isMatchConfigured = true;
 
+        if (playTabButton) {
+            playTabButton.disabled = false;
+        }
+
+        if (newGameAfterEndButton) {
+            newGameAfterEndButton.hidden = true;
+        }
+
+        updateBoardOrientationUI();
+        updatePlayerLabels();
         resetClock();
         applyGameState(data.state);
 
+        switchFeatureTab("play");
+
+        if (activeConfig.mode === "bot" && activeConfig.playerColor === "random") {
+            showToast(
+                resolvedHumanColor === "white"
+                    ? "Sorteio: você joga de Brancas."
+                    : "Sorteio: você joga de Pretas."
+            );
+        }
+
     } catch (error) {
-        statusElement.textContent = "Erro ao iniciar a partida.";
+        showToast(error.message || "Erro ao iniciar a partida.");
         console.error(error);
+    } finally {
+        busy = false;
+        updateHistoryControls();
+    }
+
+    if (gameActive && isBotTurn()) {
+        await triggerBotMoveIfNeeded();
     }
 }
 
@@ -1104,17 +1427,36 @@ const btnInspectAnalysis = document.getElementById("btn-inspect-in-analysis");
 const btnDeleteSavedGame = document.getElementById("btn-delete-saved-game");
 
 
+function buildModeLabel() {
+    if (!activeConfig) {
+        return "10+0 Rápida";
+    }
+
+    const timePart = activeConfig.timeLabel === "Sem tempo"
+        ? "Sem tempo"
+        : `${activeConfig.timeLabel} ${activeConfig.timeCategory}`;
+
+    if (activeConfig.mode === "bot") {
+        return `Bot Nv.${activeConfig.botLevel} · ${timePart}`;
+    }
+
+    return timePart;
+}
+
+
 function buildGameRecord(state, outcome, resultLabel) {
-    const recordId = (gameId || String(Date.now())).slice(0, 6).toUpperCase();
+    if (!sessionRecordId) {
+        sessionRecordId = generateRecordId();
+    }
 
     const pgnParts = (state.history || []).map(
         move => `${move.number}. ${move.white}${move.black ? " " + move.black : ""}`
     );
 
     return {
-        id: recordId,
+        id: sessionRecordId,
         date: new Date().toLocaleDateString("pt-BR"),
-        mode: "10+0 Rápida",
+        mode: buildModeLabel(),
         plies: state.total_plies,
         outcome,
         resultLabel,
@@ -1134,13 +1476,17 @@ async function saveGameRecord(state, outcome, resultLabel) {
     const record = buildGameRecord(state, outcome, resultLabel);
 
     try {
-        await fetch("/api/games/history", {
+        const response = await fetch("/api/games/history", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(record)
         });
+
+        if (!response.ok) {
+            console.error("Falha ao persistir partida no SQLite:", response.status);
+        }
     } catch (error) {
         console.error("Erro ao salvar partida no SQLite:", error);
     }
@@ -1177,7 +1523,7 @@ function renderMiniBoard(piecesMap = {}) {
 
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
-            const squareName = getSquareName(row, col);
+            const squareName = "abcdefgh"[col] + (8 - row);
             const cell = document.createElement("div");
             const isLight = (row + col) % 2 === 0;
 
@@ -1343,6 +1689,219 @@ async function deleteSelectedSavedGame() {
 
 
 // --------------------------------------------------
+// CONFIGURAÇÃO DE PARTIDA (CONTROLES DA ABA SETTINGS)
+// --------------------------------------------------
+
+function renderSettingsMiniBoard() {
+    const miniBoard = document.getElementById("settings-mini-board");
+    const coordHint = document.getElementById("settings-coord-hint");
+
+    if (!miniBoard) {
+        return;
+    }
+
+    miniBoard.innerHTML = "";
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const realR = draftConfig.flipped ? 7 - r : r;
+            const realC = draftConfig.flipped ? 7 - c : c;
+            const sq = document.createElement("div");
+
+            sq.className = "mini-sq " + ((realR + realC) % 2 === 0 ? "light" : "dark");
+
+            if (realR === 0 || realR === 1) sq.textContent = "♟";
+            if (realR === 6 || realR === 7) sq.textContent = "♙";
+
+            miniBoard.appendChild(sq);
+        }
+    }
+
+    if (coordHint) {
+        coordHint.textContent = draftConfig.flipped
+            ? "Base: Pretas (h8 – a8)"
+            : "Base: Brancas (a1 – h1)";
+    }
+}
+
+
+function syncSettingsUI() {
+    document.querySelectorAll(".mode-option").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === draftConfig.mode);
+    });
+
+    const botCard = document.getElementById("bot-card");
+    const botBadge = document.getElementById("bot-badge");
+    if (botCard) {
+        botCard.classList.toggle("disabled-card", draftConfig.mode !== "bot");
+    }
+    if (botBadge) {
+        botBadge.textContent = draftConfig.mode === "bot"
+            ? `Nível ${draftConfig.botLevel}/10`
+            : "Disponível no modo Bot";
+    }
+
+    const slider = document.getElementById("level-slider");
+    if (slider) {
+        slider.value = draftConfig.botLevel;
+    }
+
+    document.querySelectorAll(".step-btn").forEach(btn => {
+        btn.classList.toggle("active", Number(btn.dataset.lvl) === draftConfig.botLevel);
+    });
+
+    const levelInfo = BOT_LEVELS[draftConfig.botLevel];
+    const levelNameEl = document.getElementById("level-name");
+    const levelEloEl = document.getElementById("level-elo");
+    if (levelNameEl && levelInfo) {
+        levelNameEl.textContent = `Nível ${draftConfig.botLevel} — ${levelInfo.name}`;
+    }
+    if (levelEloEl && levelInfo) {
+        levelEloEl.textContent = levelInfo.elo;
+    }
+
+    document.querySelectorAll(".king-choice-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.color === draftConfig.playerColor);
+    });
+
+    document.querySelectorAll(".time-btn").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.time === draftConfig.timeLabel);
+    });
+
+    const flipToggle = document.getElementById("flip-toggle");
+    if (flipToggle) {
+        flipToggle.checked = draftConfig.flipped;
+    }
+
+    const colorNames = {
+        white: "Brancas",
+        black: "Pretas",
+        random: "Aleatório"
+    };
+
+    const sumMode = document.getElementById("sum-mode");
+    const sumBot = document.getElementById("sum-bot");
+    const sumColor = document.getElementById("sum-color");
+    const sumTime = document.getElementById("sum-time");
+    const sumFlip = document.getElementById("sum-flip");
+
+    if (sumMode) {
+        sumMode.textContent = draftConfig.mode === "bot" ? "Contra o Bot" : "Presencial (2P)";
+    }
+    if (sumBot) {
+        sumBot.textContent = draftConfig.mode === "bot"
+            ? `Nível ${draftConfig.botLevel} (${levelInfo.name})`
+            : "Desativado";
+    }
+    if (sumColor) {
+        sumColor.textContent = draftConfig.mode === "bot"
+            ? colorNames[draftConfig.playerColor]
+            : "Brancas e Pretas";
+    }
+    if (sumTime) {
+        sumTime.textContent = draftConfig.timeLabel === "Sem tempo"
+            ? "Sem tempo"
+            : `${draftConfig.timeLabel} (${draftConfig.timeCategory})`;
+    }
+    if (sumFlip) {
+        sumFlip.textContent = draftConfig.flipped ? "Invertido (Pretas)" : "Padrão (Brancas)";
+    }
+
+    renderSettingsMiniBoard();
+}
+
+
+function initSettingsControls() {
+    const stepsWrap = document.getElementById("level-steps");
+    if (stepsWrap) {
+        stepsWrap.innerHTML = "";
+        for (let i = 1; i <= 10; i++) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "step-btn";
+            btn.textContent = i;
+            btn.dataset.lvl = i;
+            btn.addEventListener("click", () => {
+                draftConfig.botLevel = i;
+                syncSettingsUI();
+            });
+            stepsWrap.appendChild(btn);
+        }
+    }
+
+    document.querySelectorAll(".mode-option").forEach(btn => {
+        btn.addEventListener("click", () => {
+            draftConfig.mode = btn.dataset.mode;
+            syncSettingsUI();
+        });
+    });
+
+    const slider = document.getElementById("level-slider");
+    if (slider) {
+        slider.addEventListener("input", event => {
+            draftConfig.botLevel = Number(event.target.value);
+            syncSettingsUI();
+        });
+    }
+
+    document.querySelectorAll(".king-choice-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            draftConfig.playerColor = btn.dataset.color;
+            if (draftConfig.playerColor === "black") {
+                draftConfig.flipped = true;
+            } else if (draftConfig.playerColor === "white") {
+                draftConfig.flipped = false;
+            }
+            syncSettingsUI();
+        });
+    });
+
+    document.querySelectorAll(".time-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            draftConfig.timeLabel = btn.dataset.time;
+            draftConfig.timeCategory = btn.dataset.cat;
+            draftConfig.baseSeconds = Number(btn.dataset.base);
+            draftConfig.incrementSeconds = Number(btn.dataset.inc);
+            syncSettingsUI();
+        });
+    });
+
+    const flipToggle = document.getElementById("flip-toggle");
+    if (flipToggle) {
+        flipToggle.addEventListener("change", event => {
+            draftConfig.flipped = event.target.checked;
+            syncSettingsUI();
+        });
+    }
+
+    const startBtn = document.getElementById("btn-start-configured-game");
+    if (startBtn) {
+        startBtn.addEventListener("click", startConfiguredGame);
+    }
+
+    const resetSettingsBtn = document.getElementById("btn-reset-settings");
+    if (resetSettingsBtn) {
+        resetSettingsBtn.addEventListener("click", () => {
+            draftConfig = {
+                mode: "pvp",
+                botLevel: 4,
+                playerColor: "white",
+                timeLabel: "10+0",
+                timeCategory: "Rápida",
+                baseSeconds: 600,
+                incrementSeconds: 0,
+                flipped: false
+            };
+            syncSettingsUI();
+            showToast("Configurações restauradas para o padrão.");
+        });
+    }
+
+    syncSettingsUI();
+}
+
+
+// --------------------------------------------------
 // EVENTOS DO TABULEIRO
 // --------------------------------------------------
 
@@ -1352,10 +1911,12 @@ boardElement.addEventListener("contextmenu", event => {
 
 boardElement.addEventListener("pointerdown", event => {
     if (
+        !isMatchConfigured ||
         event.button !== 0 ||
         busy ||
         !gameState ||
-        !gameActive
+        !gameActive ||
+        isBotTurn()
     ) {
         return;
     }
@@ -1389,7 +1950,7 @@ document.addEventListener("pointermove", event => {
 
 
 document.addEventListener("pointerup", async event => {
-    if (busy || !gameState || !gameActive) {
+    if (!isMatchConfigured || busy || !gameState || !gameActive || isBotTurn()) {
         dragging = null;
         return;
     }
@@ -1487,7 +2048,7 @@ document.addEventListener("pointercancel", () => {
 historyBody.addEventListener("click", event => {
     const cell = event.target.closest("td[data-ply]");
 
-    if (!cell || busy) {
+    if (!cell || busy || !gameState) {
         return;
     }
 
@@ -1508,6 +2069,10 @@ historyBody.addEventListener("click", event => {
 
 undoButton.addEventListener("click", undoMove);
 resetButton.addEventListener("click", resetGame);
+
+if (newGameAfterEndButton) {
+    newGameAfterEndButton.addEventListener("click", goToNewGameSetup);
+}
 
 prevButton.addEventListener("click", previousPosition);
 nextButton.addEventListener("click", nextPosition);
@@ -1543,29 +2108,31 @@ if (btnInspectAnalysis) {
 
 
 // --------------------------------------------------
-// NAVEGAÇÃO ENTRE ABAS
+// NAVEGAÇÃO ENTRE ABAS (BLOQUEIA PARTIDA SEM CONFIGURAR)
 // --------------------------------------------------
 
 function switchFeatureTab(feature) {
+    if (feature === "play" && !isMatchConfigured) {
+        showToast("Configure a partida antes de jogar.");
+        feature = "settings";
+    }
+
     const viewMap = {
         play: document.getElementById("view-play"),
-        games: document.getElementById("view-games")
+        games: document.getElementById("view-games"),
+        settings: document.getElementById("view-settings")
     };
 
     const subtitles = {
-        play: "Partida individual de xadrez",
-        games: "Registro e revisão de partidas concluídas"
+        play: activeConfig?.mode === "bot"
+            ? `Partida contra o Bot (Nível ${activeConfig.botLevel})`
+            : "Partida individual de xadrez",
+        games: "Registro e revisão de partidas concluídas",
+        settings: "Configuração de partida"
     };
 
     if (!viewMap[feature]) {
-        const featureNames = {
-            analysis: "Análise de partida",
-            settings: "Configuração de partida"
-        };
-
-        showToast(
-            `${featureNames[feature]} será implementado em uma próxima etapa.`
-        );
+        showToast("Análise de partida será implementada na próxima etapa.");
         return;
     }
 
@@ -1588,8 +2155,10 @@ function switchFeatureTab(feature) {
 
     if (feature === "games") {
         loadSavedGames();
-    } else if (feature === "play") {
+    } else if (feature === "play" && gameState) {
         renderBoard();
+    } else if (feature === "settings") {
+        syncSettingsUI();
     }
 }
 
@@ -1619,7 +2188,9 @@ document.addEventListener("click", event => {
         label.textContent = `Tabuleiro: ${BOARD_THEMES[currentBoardTheme].label}`;
     }
 
-    renderBoard();
+    if (gameState) {
+        renderBoard();
+    }
 });
 
 
@@ -1628,7 +2199,7 @@ document.addEventListener("click", event => {
 // --------------------------------------------------
 
 window.addEventListener("pagehide", () => {
-    if (gameState && gameState.total_plies > 0 && gameActive) {
+    if (isMatchConfigured && gameState && gameState.total_plies > 0 && gameActive) {
         const record = buildGameRecord(
             gameState,
             "draw",
@@ -1646,7 +2217,8 @@ window.addEventListener("pagehide", () => {
 
 
 // --------------------------------------------------
-// INICIALIZAÇÃO
+// INICIALIZAÇÃO (ABRE NA CONFIGURAÇÃO DE PARTIDA)
 // --------------------------------------------------
 
-createGame();
+initSettingsControls();
+switchFeatureTab("settings");
