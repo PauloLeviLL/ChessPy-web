@@ -34,7 +34,6 @@ const pieceNames = {
 
 const ANIMATION_DURATION = 160;
 const INITIAL_TIME = 600;
-const STORAGE_KEY = "chesspy_saved_games";
 
 let gameId = null;
 let gameState = null;
@@ -911,13 +910,13 @@ async function makeMove(fromSquare, toSquare, animate = true) {
             if (gameState.checkmate) {
                 const whiteWon = gameState.turn !== "white";
 
-                saveGameRecord(
+                await saveGameRecord(
                     gameState,
                     whiteWon ? "win" : "loss",
                     whiteWon ? "1-0 (Brancas)" : "0-1 (Pretas)"
                 );
             } else {
-                saveGameRecord(
+                await saveGameRecord(
                     gameState,
                     "draw",
                     "½-½ (Empate)"
@@ -954,6 +953,10 @@ async function resetGame() {
         return;
     }
 
+    if (gameState && gameState.total_plies > 0 && gameActive) {
+        await saveGameRecord(gameState, "draw", "½-½ (Interrompida)");
+    }
+
     busy = true;
     updateHistoryControls();
 
@@ -972,6 +975,8 @@ async function resetGame() {
                 data.detail || "Não foi possível reiniciar."
             );
         }
+
+        gameId = `${gameId.split("-")[0]}-${Date.now()}`;
 
         stopClock();
         resetClock();
@@ -1080,7 +1085,7 @@ async function createGame() {
 
 
 // --------------------------------------------------
-// HISTÓRICO DE PARTIDAS SALVAS
+// HISTÓRICO DE PARTIDAS SALVAS (SQLITE)
 // --------------------------------------------------
 
 const savedGamesBody = document.getElementById("saved-games-body");
@@ -1099,32 +1104,14 @@ const btnInspectAnalysis = document.getElementById("btn-inspect-in-analysis");
 const btnDeleteSavedGame = document.getElementById("btn-delete-saved-game");
 
 
-function getLocalSavedGames() {
-    try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch {
-        return [];
-    }
-}
-
-
-function saveGameRecord(state, outcome, resultLabel) {
-    if (!state || !state.timeline || state.total_plies === 0) {
-        return;
-    }
-
-    const existing = getLocalSavedGames();
+function buildGameRecord(state, outcome, resultLabel) {
     const recordId = (gameId || String(Date.now())).slice(0, 6).toUpperCase();
-
-    if (existing.some(game => game.id === recordId)) {
-        return;
-    }
 
     const pgnParts = (state.history || []).map(
         move => `${move.number}. ${move.white}${move.black ? " " + move.black : ""}`
     );
 
-    const record = {
+    return {
         id: recordId,
         date: new Date().toLocaleDateString("pt-BR"),
         mode: "10+0 Rápida",
@@ -1136,31 +1123,44 @@ function saveGameRecord(state, outcome, resultLabel) {
         timeline: state.timeline,
         history: state.history
     };
+}
 
-    existing.unshift(record);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+
+async function saveGameRecord(state, outcome, resultLabel) {
+    if (!state || !state.timeline || state.total_plies === 0) {
+        return;
+    }
+
+    const record = buildGameRecord(state, outcome, resultLabel);
+
+    try {
+        await fetch("/api/games/history", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(record)
+        });
+    } catch (error) {
+        console.error("Erro ao salvar partida no SQLite:", error);
+    }
 }
 
 
 async function loadSavedGames() {
-    let apiGames = [];
-
     try {
         const response = await fetch("/api/games");
 
         if (response.ok) {
             const data = await response.json();
-
-            if (Array.isArray(data)) {
-                apiGames = data;
-            }
+            savedGames = Array.isArray(data) ? data : [];
+        } else {
+            savedGames = [];
         }
-    } catch {
-        // Fallback para armazenamento local enquanto GET /api/games não retornar lista.
+    } catch (error) {
+        console.error("Erro ao carregar histórico do SQLite:", error);
+        savedGames = [];
     }
-
-    const localGames = getLocalSavedGames();
-    savedGames = apiGames.length > 0 ? apiGames : localGames;
 
     if (savedGames.length > 0 && !savedGames.some(game => game.id === selectedSavedGameId)) {
         selectedSavedGameId = savedGames[0].id;
@@ -1324,22 +1324,21 @@ async function deleteSelectedSavedGame() {
     const targetId = selectedSavedGameId;
 
     try {
-        await fetch(`/api/games/${targetId}`, {
+        const response = await fetch(`/api/games/${targetId}`, {
             method: "DELETE"
         });
-    } catch {
-        // Ignora erro caso a rota DELETE ainda não exista no backend.
+
+        if (!response.ok) {
+            throw new Error("Não foi possível excluir o registro.");
+        }
+
+        selectedSavedGameId = null;
+        await loadSavedGames();
+        showToast("Registro removido do banco de dados.");
+    } catch (error) {
+        showToast(error.message);
+        console.error(error);
     }
-
-    const updatedLocal = getLocalSavedGames().filter(
-        game => game.id !== targetId
-    );
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocal));
-    selectedSavedGameId = null;
-
-    await loadSavedGames();
-    showToast("Registro removido do histórico.");
 }
 
 
@@ -1622,6 +1621,29 @@ document.addEventListener("click", event => {
 
     renderBoard();
 });
+
+
+// --------------------------------------------------
+// SALVAMENTO AUTOMÁTICO AO FECHAR OU RECARREGAR A PÁGINA
+// --------------------------------------------------
+
+window.addEventListener("pagehide", () => {
+    if (gameState && gameState.total_plies > 0 && gameActive) {
+        const record = buildGameRecord(
+            gameState,
+            "draw",
+            "½-½ (Interrompida)"
+        );
+
+        const blob = new Blob(
+            [JSON.stringify(record)],
+            { type: "application/json" }
+        );
+
+        navigator.sendBeacon("/api/games/history", blob);
+    }
+});
+
 
 // --------------------------------------------------
 // INICIALIZAÇÃO

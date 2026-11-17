@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -8,6 +9,12 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from chesspy_web.controller.game_controller import GameController
+from database import (
+    delete_saved_game,
+    init_db,
+    list_saved_games,
+    upsert_saved_game,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -15,8 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent
 app = FastAPI(
     title="ChessPy-Web",
     description="Jogo de xadrez para navegador.",
-    version="1.0.0",
+    version="1.1.0",
 )
+
+init_db()
 
 app.mount(
     "/static",
@@ -32,6 +41,19 @@ games: dict[str, GameController] = {}
 class MoveRequest(BaseModel):
     from_square: str
     to_square: str
+
+
+class SaveGameRequest(BaseModel):
+    id: str
+    date: str | None = None
+    mode: str = "10+0 Rápida"
+    plies: int
+    outcome: str
+    resultLabel: str
+    pgn: str
+    finalPieces: dict
+    timeline: list
+    history: list
 
 
 def get_game(game_id: str) -> GameController:
@@ -162,6 +184,31 @@ def home(request: Request):
         name="index.html",
         context={},
     )
+
+
+@app.get("/api/games")
+def get_saved_games():
+    return list_saved_games()
+
+
+@app.post("/api/games/history")
+def save_game_history(payload: SaveGameRequest):
+    record = payload.model_dump()
+    if not record.get("date"):
+        record["date"] = datetime.now().strftime("%d/%m/%Y")
+    record["id"] = record["id"].upper()
+    return upsert_saved_game(record)
+
+
+@app.delete("/api/games/{record_id}")
+def remove_saved_game(record_id: str):
+    deleted = delete_saved_game(record_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail="Registro não encontrado.",
+        )
+    return {"deleted": True, "id": record_id.upper()}
 
 
 @app.post("/api/games")
