@@ -1,4 +1,3 @@
-import random
 from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
@@ -16,9 +15,10 @@ from chesspy_web.database import (
     list_saved_games,
     upsert_saved_game,
 )
+from chesspy_web.friend_bot import FriendStyleBot
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(
     title="ChessPy-Web",
@@ -28,13 +28,28 @@ app = FastAPI(
 
 init_db()
 
+friend_bot = FriendStyleBot()
+sample_pgn_path = BASE_DIR.parent.parent / "friend_games.pgn"
+if not sample_pgn_path.exists():
+    sample_pgn_path = BASE_DIR.parent / "friend_games.pgn"
+
+if sample_pgn_path.exists():
+    friend_bot.train_from_pgn_file(sample_pgn_path, player_name="deidaradzn")
+    print(
+        f"[FriendBot] Carregado de {sample_pgn_path}: "
+        f"{friend_bot.games_loaded} partidas, {friend_bot.moves_recorded} lances."
+    )
+else:
+    print(f"[FriendBot] AVISO: friend_games.pgn não encontrado em {sample_pgn_path}")
+
+
 app.mount(
     "/static",
-    StaticFiles(directory=BASE_DIR / "chesspy_web" / "static"),
+    StaticFiles(directory=BASE_DIR / "static"),
     name="static",
 )
 
-templates = Jinja2Templates(directory=BASE_DIR / "chesspy_web" / "templates")
+templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 games: dict[str, GameController] = {}
 game_configs: dict[str, dict] = {}
@@ -283,17 +298,31 @@ def make_bot_move(game_id: str):
     game = get_game(game_id)
     board = game.board.board
 
-    legal_moves = list(board.legal_moves)
-    if not legal_moves:
+    if not list(board.legal_moves):
         raise HTTPException(
             status_code=400,
             detail="Não há movimentos legais para o Bot.",
         )
 
-    chosen_move = random.choice(legal_moves)
-    move_uci = chosen_move.uci()
+    config = game_configs.get(game_id, {})
+    bot_level = config.get("bot_level", 4)
 
-    if not game.play(move_uci):
+    key = friend_bot.position_key(board)
+    known = dict(friend_bot.position_moves.get(key, {}))
+
+    print(f"[DEBUG] key={key!r} | total_posicoes={len(friend_bot.position_moves)} | exata={key in friend_bot.position_moves}")
+    
+    chosen_move = friend_bot.choose_move(board, level=bot_level)
+    if chosen_move is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Não foi possível selecionar um lance para o Bot.",
+        )
+
+    origem = f"PGN {known}" if known else "FALLBACK aleatório"
+    print(f"[FriendBot] Lance escolhido: {chosen_move.uci()} | Origem: {origem}")
+
+    if not game.play(chosen_move.uci()):
         raise HTTPException(
             status_code=400,
             detail="Falha ao executar lance do Bot.",
