@@ -1,9 +1,11 @@
-from datetime import datetime
+import sys
+import threading
+from datetime import datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
 import chess
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -19,6 +21,41 @@ from chesspy_web.friend_bot import FriendStyleBot
 
 
 BASE_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BASE_DIR.parent.parent
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from import_friend_games import (  # noqa: E402
+    DEFAULT_USERNAME,
+    fetch_chesscom_pgn_for_month,
+    merge_pgn_into_file,
+)
+
+
+FRIEND_USERNAME = DEFAULT_USERNAME
+SYNC_COOLDOWN = timedelta(minutes=20)
+
+sample_pgn_path = PROJECT_ROOT / "friend_games.pgn"
+if not sample_pgn_path.exists() and (BASE_DIR.parent / "friend_games.pgn").exists():
+    sample_pgn_path = BASE_DIR.parent / "friend_games.pgn"
+
+_sync_lock = threading.Lock()
+_last_sync_at: datetime | None = None
+
+
+def _build_friend_bot() -> FriendStyleBot:
+    bot = FriendStyleBot()
+    if sample_pgn_path.exists():
+        bot.train_from_pgn_file(sample_pgn_path, player_name=FRIEND_USERNAME)
+        print(
+            f"[FriendBot] Carregado de {sample_pgn_path}: "
+            f"{bot.games_loaded} partidas, {bot.moves_recorded} lances."
+        )
+    else:
+        print(f"[FriendBot] AVISO: friend_games.pgn não encontrado em {sample_pgn_path}")
+    return bot
+
 
 app = FastAPI(
     title="ChessPy-Web",
@@ -27,20 +64,51 @@ app = FastAPI(
 )
 
 init_db()
+friend_bot = _build_friend_bot()
 
-friend_bot = FriendStyleBot()
-sample_pgn_path = BASE_DIR.parent.parent / "friend_games.pgn"
-if not sample_pgn_path.exists():
-    sample_pgn_path = BASE_DIR.parent / "friend_games.pgn"
 
-if sample_pgn_path.exists():
-    friend_bot.train_from_pgn_file(sample_pgn_path, player_name="deidaradzn")
-    print(
-        f"[FriendBot] Carregado de {sample_pgn_path}: "
-        f"{friend_bot.games_loaded} partidas, {friend_bot.moves_recorded} lances."
-    )
-else:
-    print(f"[FriendBot] AVISO: friend_games.pgn não encontrado em {sample_pgn_path}")
+def sync_friend_games(force: bool = False) -> dict:
+    """Baixa as partidas do mês atual do Chess.com, deduplica e recarrega o bot."""
+    global _last_sync_at, friend_bot
+    now = datetime.now()
+
+    if not force and _last_sync_at is not None and (now - _last_sync_at) < SYNC_COOLDOWN:
+        return {"status": "skipped_cooldown"}
+
+    if not _sync_lock.acquire(blocking=False):
+        return {"status": "already_running"}
+
+    try:
+        _last_sync_at = datetime.now()
+        incoming_pgn = fetch_chesscom_pgn_for_month(
+            FRIEND_USERNAME,
+            str(_last_sync_at.year),
+            str(_last_sync_at.month),
+        )
+        added, duplicates, ignored = merge_pgn_into_file(
+            target_path=sample_pgn_path,
+            incoming_pgn_text=incoming_pgn,
+            player_name=FRIEND_USERNAME,
+        )
+        print(
+            f"[FriendBot Sync] Novas: {added} | Duplicadas ignoradas: {duplicates} | "
+            f"Outros jogadores ignorados: {ignored}"
+        )
+        if added > 0:
+            friend_bot = _build_friend_bot()
+
+        return {
+            "status": "synced",
+            "added": added,
+            "duplicates": duplicates,
+            "games_loaded": friend_bot.games_loaded,
+            "moves_recorded": friend_bot.moves_recorded,
+        }
+    except Exception as exc:
+        print(f"[FriendBot Sync] Falha ao sincronizar com Chess.com: {exc}")
+        return {"status": "error", "detail": str(exc)}
+    finally:
+        _sync_lock.release()
 
 
 app.mount(
@@ -202,12 +270,18 @@ def get_game_state(game: GameController) -> dict:
 
 
 @app.get("/")
-def home(request: Request):
+def home(request: Request, background_tasks: BackgroundTasks):
+    background_tasks.add_task(sync_friend_games, False)
     return templates.TemplateResponse(
         request=request,
         name="index.html",
         context={},
     )
+
+
+@app.post("/api/friend-bot/sync")
+def force_sync_friend_bot():
+    return sync_friend_games(force=True)
 
 
 @app.get("/api/games")
@@ -310,8 +384,6 @@ def make_bot_move(game_id: str):
     key = friend_bot.position_key(board)
     known = dict(friend_bot.position_moves.get(key, {}))
 
-    print(f"[DEBUG] key={key!r} | total_posicoes={len(friend_bot.position_moves)} | exata={key in friend_bot.position_moves}")
-    
     chosen_move = friend_bot.choose_move(board, level=bot_level)
     if chosen_move is None:
         raise HTTPException(
@@ -319,8 +391,8 @@ def make_bot_move(game_id: str):
             detail="Não foi possível selecionar um lance para o Bot.",
         )
 
-    origem = f"PGN {known}" if known else "FALLBACK aleatório"
-    print(f"[FriendBot] Lance escolhido: {chosen_move.uci()} | Origem: {origem}")
+    origem = f"PGN {known}" if known else "ESTILO PGN"
+    print(f"[FriendBot] Nível: {bot_level} | Lance escolhido: {chosen_move.uci()} | Origem: {origem}")
 
     if not game.play(chosen_move.uci()):
         raise HTTPException(
