@@ -19290,3 +19290,60 @@ Kd4 53. Qxh4 Ke4 0-1
 
 1. c4 e5 2. e3 Nf6 3. f4 Nc6 4. Nc3 d5 5. Nf3 dxc4 6. Nxe5 Nd7 7. Bxc4 Ndxe5 8.
 fxe5 Nxe5 9. d4 Nxc4 10. Qd3 Nd6 11. Nb5 Bf5 12. Qc2 Bxc2 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.21"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "Matchuu1"]
+[Result "0-1"]
+[CurrentPosition "8/8/6p1/1k1K3p/5P1P/1p6/P7/8 w - - 0 36"]
+[Timezone "UTC"]
+[ECO "B08"]
+[ECOUrl "https://www.chess.com/openings/Pirc-Defense-Classical-Variation"]
+[UTCDate "2026.11.21"]
+[UTCTime "02:20:14"]
+[WhiteElo "407"]
+[BlackElo "428"]
+[TimeControl "180"]
+[Termination "Matchuu1 won on time"]
+[StartTime "02:20:14"]
+[EndDate "2026.11.21"]
+[EndTime "02:26:27"]
+[Link "https://www.chess.com/game/live/187665391204"]
+
+1. e4 d6 2. Nf3 Nf6 3. Nc3 g6 4. d4 Nbd7 5. Bg5 Bg7 6. e5 dxe5 7. dxe5 Nh5 8.
+Ne4 O-O 9. Be2 Bxe5 10. Nxe5 Nxe5 11. Bxh5 gxh5 12. Qxh5 Bf5 13. Rd1 Qe8 14.
+Bh6 Bxe4 15. Bxf8 Bxg2 16. Qg5+ Ng6 17. Qxg2 Qxf8 18. Rg1 e5 19. Rd5 e4 20.
+Qxe4 Re8 21. Rxg6+ fxg6 22. Re5 Rxe5 23. Qxe5 Kf7 24. Qxc7+ Qe7+ 25. Qxe7+ Kxe7
+26. c4 Kd6 27. b3 Kc5 28. Kd2 Kb4 29. Kd3 b6 30. Kd4 a5 31. f4 h5 32. h3 a4 33.
+h4 axb3 34. Kd5 b5 35. cxb5 Kxb5 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.21"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "Arthur-tole"]
+[Result "1-0"]
+[CurrentPosition "r7/1p4p1/pp1N2Qk/3P4/4B3/8/PPb2K2/8 b - - 3 27"]
+[Timezone "UTC"]
+[ECO "C00"]
+[ECOUrl "https://www.chess.com/openings/French-Defense-Knight-Variation"]
+[UTCDate "2026.11.21"]
+[UTCTime "02:15:09"]
+[WhiteElo "415"]
+[BlackElo "387"]
+[TimeControl "180"]
+[Termination "deidaradzn won by checkmate"]
+[StartTime "02:15:09"]
+[EndDate "2026.11.21"]
+[EndTime "02:19:02"]
+[Link "https://www.chess.com/game/live/187665213428"]
+
+1. e4 e6 2. Nf3 h6 3. d4 a6 4. Nc3 Qe7 5. Be3 Nc6 6. d5 exd5 7. exd5 Ne5 8. Be2
+Nxf3+ 9. Bxf3 Nf6 10. O-O h5 11. Re1 h4 12. Qd3 h3 13. Rad1 hxg2 14. Bxg2 Ng4
+15. Bb6 cxb6 16. Rxe7+ Bxe7 17. Qe4 Nxf2 18. Kxf2 Rxh2 19. Re1 Kf8 20. Qxe7+
+Kg8 21. Rh1 Rxh1 22. Bxh1 d6 23. Ne4 Bf5 24. Nxd6 Kh7 25. Qxf7 Bxc2 26. Be4+
+Kh6 27. Qg6# 1-0

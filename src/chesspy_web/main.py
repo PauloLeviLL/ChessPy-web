@@ -50,7 +50,9 @@ def _build_friend_bot() -> FriendStyleBot:
         bot.train_from_pgn_file(sample_pgn_path, player_name=FRIEND_USERNAME)
         print(
             f"[FriendBot] Carregado de {sample_pgn_path}: "
-            f"{bot.games_loaded} partidas, {bot.moves_recorded} lances."
+            f"{bot.games_loaded} partidas, {bot.moves_recorded} lances | "
+            f"ML ativo: {bot.ml_trained} ({len(bot._X_train)} amostras) | "
+            f"Rating médio: {bot.average_rating}"
         )
     else:
         print(f"[FriendBot] AVISO: friend_games.pgn não encontrado em {sample_pgn_path}")
@@ -391,7 +393,7 @@ def make_bot_move(game_id: str):
             detail="Não foi possível selecionar um lance para o Bot.",
         )
 
-    origem = f"PGN {known}" if known else "ESTILO PGN"
+    origem = f"PGN {known}" if known else ("ML" if friend_bot.ml_trained else "FALLBACK")
     print(f"[FriendBot] Nível: {bot_level} | Lance escolhido: {chosen_move.uci()} | Origem: {origem}")
 
     if not game.play(chosen_move.uci()):
