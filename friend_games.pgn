@@ -19347,3 +19347,533 @@ Nxf3+ 9. Bxf3 Nf6 10. O-O h5 11. Re1 h4 12. Qd3 h3 13. Rad1 hxg2 14. Bxg2 Ng4
 15. Bb6 cxb6 16. Rxe7+ Bxe7 17. Qe4 Nxf2 18. Kxf2 Rxh2 19. Re1 Kf8 20. Qxe7+
 Kg8 21. Rh1 Rxh1 22. Bxh1 d6 23. Ne4 Bf5 24. Nxd6 Kh7 25. Qxf7 Bxc2 26. Be4+
 Kh6 27. Qg6# 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.24"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "lilyhychunyy"]
+[Result "0-1"]
+[CurrentPosition "2k4r/5ppp/p3q3/1p1bP3/1B4P1/5P2/PPP4P/2K2B1R w - - 0 21"]
+[Timezone "UTC"]
+[ECO "C45"]
+[ECOUrl "https://www.chess.com/openings/Scotch-Game-Classical-Blumenfeld-Attack"]
+[UTCDate "2026.11.24"]
+[UTCTime "05:02:55"]
+[WhiteElo "424"]
+[BlackElo "452"]
+[TimeControl "180"]
+[Termination "lilyhychunyy won on time"]
+[StartTime "05:02:55"]
+[EndDate "2026.11.24"]
+[EndTime "05:07:50"]
+[Link "https://www.chess.com/game/live/187886385734"]
+
+1. e4 e5 2. Nf3 Qf6 3. d4 exd4 4. Nxd4 Bc5 5. Be3 Nc6 6. Nb5 Bd6 7. Bc5 a6 8.
+Nxd6+ cxd6 9. Bxd6 Qe6 10. Nc3 Nf6 11. f3 b5 12. Qd3 Nb4 13. Bxb4 Bb7 14. O-O-O
+O-O-O 15. g3 d5 16. e5 Nh5 17. g4 Nf4 18. Qxd5 Nxd5 19. Nxd5 Rxd5 20. Rxd5 Bxd5
+0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.24"]
+[Round "-"]
+[White "abcd454545"]
+[Black "deidaradzn"]
+[Result "0-1"]
+[CurrentPosition "r3r1k1/ppp2ppp/8/3B4/6n1/2P3PN/P6q/4RQ1K w - - 0 22"]
+[Timezone "UTC"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Kings-Fianchetto-Opening...2.Bg2-Nf6-3.d3-d5"]
+[UTCDate "2026.11.24"]
+[UTCTime "04:54:51"]
+[WhiteElo "410"]
+[BlackElo "432"]
+[TimeControl "180"]
+[Termination "deidaradzn won by checkmate"]
+[StartTime "04:54:51"]
+[EndDate "2026.11.24"]
+[EndTime "04:59:12"]
+[Link "https://www.chess.com/game/live/187886088556"]
+
+1. g3 d5 2. Bg2 Nf6 3. d3 e5 4. e4 Nc6 5. exd5 Nxd5 6. d4 exd4 7. Ne2 Bc5 8.
+O-O O-O 9. Re1 Re8 10. c3 dxc3 11. bxc3 Qf6 12. Bb2 Bxf2+ 13. Kh1 Bxe1 14. Bxd5
+Qf1+ 15. Ng1 Bh3 16. Nd2 Qf2 17. Qf3 Qxd2 18. Rd1 Qxb2 19. Nxh3 Ne5 20. Qf1 Ng4
+21. Rxe1 Qxh2# 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.24"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "jozi000"]
+[Result "1-0"]
+[CurrentPosition "N4b1r/pp2p1pp/5p2/3k4/2Q1nBb1/5N2/PP2KPPP/2R5 b - - 1 21"]
+[Timezone "UTC"]
+[ECO "B01"]
+[ECOUrl "https://www.chess.com/openings/Scandinavian-Defense-Mieses-Kotrc-Variation-3.Nc3"]
+[UTCDate "2026.11.24"]
+[UTCTime "04:50:37"]
+[WhiteElo "424"]
+[BlackElo "416"]
+[TimeControl "180"]
+[Termination "deidaradzn won by checkmate"]
+[StartTime "04:50:37"]
+[EndDate "2026.11.24"]
+[EndTime "04:54:47"]
+[Link "https://www.chess.com/game/live/187885931352"]
+
+1. e4 d5 2. exd5 Qxd5 3. Nc3 Qc6 4. d4 Na6 5. Nf3 Nf6 6. Bb5 Qxb5 7. Nxb5 Ne4
+8. Qe2 Bf5 9. Bf4 Nb4 10. Nxc7+ Kd7 11. Qb5+ Kc8 12. Nxa8 Nxc2+ 13. Ke2 Nxa1
+14. Rxa1 Bg4 15. Qc4+ Kd7 16. Qc7+ Ke6 17. Qe5+ Kd7 18. Rc1 f6 19. Qc7+ Ke6 20.
+d5+ Kxd5 21. Qc4# 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.24"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "sonu080904"]
+[Result "1-0"]
+[CurrentPosition "5kr1/3p1R1p/nppN4/6p1/8/5N2/2r2PPP/4R1K1 b - - 0 25"]
+[Timezone "UTC"]
+[ECO "A04"]
+[ECOUrl "https://www.chess.com/openings/Reti-Opening-Queenside-Fianchetto-Variation-2.e4-Bb7"]
+[UTCDate "2026.11.24"]
+[UTCTime "04:39:10"]
+[WhiteElo "416"]
+[BlackElo "396"]
+[TimeControl "180"]
+[Termination "deidaradzn won by checkmate"]
+[StartTime "04:39:10"]
+[EndDate "2026.11.24"]
+[EndTime "04:43:31"]
+[Link "https://www.chess.com/game/live/187885504450"]
+
+1. e4 b6 2. Nf3 Bb7 3. d4 Bxe4 4. Nc3 Bb7 5. Be2 g6 6. O-O Bg7 7. Be3 a6 8. d5
+Nf6 9. Qd2 a5 10. Rad1 a4 11. Bh6 Bxh6 12. Qxh6 c6 13. d6 exd6 14. Rxd6 a3 15.
+Qg7 Rg8 16. Qxf6 Qxf6 17. Rxf6 g5 18. bxa3 Rxa3 19. Ne4 Rxa2 20. Nd6+ Ke7 21.
+Rh6 Ba6 22. Bxa6 Nxa6 23. Re1+ Kf8 24. Rf6 Rxc2 25. Rxf7# 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.24"]
+[Round "-"]
+[White "rk49wh"]
+[Black "deidaradzn"]
+[Result "0-1"]
+[CurrentPosition "8/1p1kpp1Q/8/r2pB3/3P2b1/4P3/PPP1qP1P/R3K2R w KQ - 1 24"]
+[Timezone "UTC"]
+[ECO "D02"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Zukertort-Chigorin-Variation-3.Bf4-Nf6-4.e3"]
+[UTCDate "2026.11.24"]
+[UTCTime "04:34:13"]
+[WhiteElo "412"]
+[BlackElo "408"]
+[TimeControl "180"]
+[Termination "deidaradzn won by checkmate"]
+[StartTime "04:34:13"]
+[EndDate "2026.11.24"]
+[EndTime "04:39:01"]
+[Link "https://www.chess.com/game/live/187885322312"]
+
+1. d4 d5 2. Bf4 Nc6 3. e3 Nf6 4. Nf3 g6 5. Nc3 Bg7 6. Nb5 Bd7 7. Nxc7+ Kf8 8.
+Nb5 Nh5 9. Bc7 Qc8 10. g4 a6 11. gxh5 axb5 12. Bg3 gxh5 13. Bxb5 Ra5 14. Bxc6
+Qxc6 15. Ne5 Bxe5 16. Bxe5 Rg8 17. Bg3 Qf6 18. Qxh5 Bg4 19. Be5 Qf3 20. Qh6+
+Rg7 21. Qxg7+ Ke8 22. Qh8+ Kd7 23. Qxh7 Qe2# 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.24"]
+[Round "-"]
+[White "Eickzx"]
+[Black "deidaradzn"]
+[Result "1-0"]
+[CurrentPosition "3r4/pp3kpp/4qb2/1Np5/Q4rP1/8/PP3P1P/R4RK1 b - - 3 21"]
+[Timezone "UTC"]
+[ECO "C01"]
+[ECOUrl "https://www.chess.com/openings/French-Defense-Exchange-Variation-3...exd5-4.Nf3-Nc6"]
+[UTCDate "2026.11.24"]
+[UTCTime "00:56:26"]
+[WhiteElo "412"]
+[BlackElo "399"]
+[TimeControl "180"]
+[Termination "Eickzx won on time"]
+[StartTime "00:56:26"]
+[EndDate "2026.11.24"]
+[EndTime "01:00:50"]
+[Link "https://www.chess.com/game/live/187877387780"]
+
+1. e4 e6 2. Nf3 d5 3. exd5 exd5 4. d4 Nc6 5. Ng5 Nf6 6. Nxf7 Kxf7 7. c4 Bg4 8.
+Be2 Qd7 9. cxd5 Nxd5 10. Bxg4 Re8+ 11. Be2 Be7 12. O-O Bf6 13. Bc4 Nxd4 14. Be3
+c5 15. Nc3 Re5 16. Bf4 Rf5 17. g4 Rxf4 18. Bxd5+ Ne6 19. Bxe6+ Qxe6 20. Nb5 Rd8
+21. Qa4 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "Show-mercy1029"]
+[Result "0-1"]
+[CurrentPosition "4r3/p7/8/8/PP6/1KP5/6kP/8 w - - 0 35"]
+[Timezone "UTC"]
+[ECO "C42"]
+[ECOUrl "https://www.chess.com/openings/Petrovs-Defense-Three-Knights-Game"]
+[UTCDate "2026.11.23"]
+[UTCTime "23:50:54"]
+[WhiteElo "407"]
+[BlackElo "412"]
+[TimeControl "180"]
+[Termination "Show-mercy1029 won on time"]
+[StartTime "23:50:54"]
+[EndDate "2026.11.23"]
+[EndTime "23:55:20"]
+[Link "https://www.chess.com/game/live/187874951920"]
+
+1. e4 e5 2. Nf3 Nf6 3. Nc3 Bc5 4. d4 exd4 5. Nxd4 Bxd4 6. Qxd4 Ng4 7. Be2 Qf6
+8. Qxf6 Nxf6 9. Bg5 O-O 10. Bxf6 gxf6 11. O-O-O d6 12. Rhe1 f5 13. Bd3 fxe4 14.
+Bxe4 Re8 15. Bxh7+ Kxh7 16. Rxe8 Bd7 17. Re7 Bb5 18. Rxf7+ Kg8 19. Rxc7 Be8 20.
+Rxd6 Nc6 21. Nd5 Nd4 22. c3 Nb5 23. Rxb7 Nxd6 24. Rb4 Rd8 25. Rg4+ Kf7 26. Rf4+
+Ke6 27. Nc7+ Ke5 28. Rf8 Ke4 29. Rxe8+ Nxe8 30. Nxe8 Rxe8 31. b4 Kd3 32. Kb2
+Ke2 33. a4 Kxf2 34. Kb3 Kxg2 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "wel_1225"]
+[Result "1-0"]
+[CurrentPosition "8/8/8/8/2Q5/3P4/1k1K2PP/8 b - - 4 41"]
+[Timezone "UTC"]
+[ECO "C45"]
+[ECOUrl "https://www.chess.com/openings/Scotch-Game-3...exd4-4.Nxd4-d6"]
+[UTCDate "2026.11.23"]
+[UTCTime "23:43:56"]
+[WhiteElo "415"]
+[BlackElo "385"]
+[TimeControl "180"]
+[Termination "deidaradzn won by resignation"]
+[StartTime "23:43:56"]
+[EndDate "2026.11.23"]
+[EndTime "23:48:55"]
+[Link "https://www.chess.com/game/live/187874677624"]
+
+1. e4 e5 2. Nf3 d6 3. d4 exd4 4. Nxd4 Nc6 5. Be3 Nxd4 6. Qxd4 Nf6 7. e5 dxe5 8.
+Qxe5+ Be7 9. Nc3 Ng4 10. Qxg7 Nxe3 11. Qxh8+ Bf8 12. Qe5+ Be7 13. Qxe3 Be6 14.
+Bd3 Bb4 15. O-O-O Bxc3 16. bxc3 Qe7 17. Rhe1 Qa3+ 18. Kd2 O-O-O 19. Ke2 Qxa2
+20. Kf1 Bc4 21. Bxc4 Qxc4+ 22. Rd3 Rxd3 23. cxd3 Qe6 24. Qxe6+ fxe6 25. Rxe6
+Kd7 26. Rh6 a5 27. Rxh7+ Kc6 28. f4 b5 29. Rh8 Kc5 30. Ra8 a4 31. c4 Kb4 32.
+cxb5 a3 33. Rxa3 Kxa3 34. f5 Kb4 35. f6 Kxb5 36. f7 c5 37. f8=Q Kb4 38. Qf4+ c4
+39. Qxc4+ Ka3 40. Ke2 Kb2 41. Kd2 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "Jonathan1075"]
+[Black "deidaradzn"]
+[Result "0-1"]
+[CurrentPosition "3k1r1r/2pq2pp/2b1p3/Q2pP3/3n1p2/6PP/2P2PKB/5R2 w - - 0 27"]
+[Timezone "UTC"]
+[ECO "B00"]
+[ECOUrl "https://www.chess.com/openings/Nimzowitsch-Defense-2.d4-e6-3.Nf3-d5-4.e5"]
+[UTCDate "2026.11.23"]
+[UTCTime "23:34:40"]
+[WhiteElo "382"]
+[BlackElo "407"]
+[TimeControl "180"]
+[Termination "deidaradzn won on time"]
+[StartTime "23:34:40"]
+[EndDate "2026.11.23"]
+[EndTime "23:40:24"]
+[Link "https://www.chess.com/game/live/187874307774"]
+
+1. e4 e6 2. Nf3 d5 3. e5 Nc6 4. d4 f6 5. Nc3 Bb4 6. Bf4 Bxc3+ 7. bxc3 Nge7 8.
+Bd3 Ng6 9. Bg3 Qe7 10. O-O Bd7 11. h3 O-O-O 12. Qb1 f5 13. Qb2 f4 14. Bh2 Rdf8
+15. Rab1 b6 16. Ba6+ Kd8 17. Bb7 Nh4 18. g3 Nxf3+ 19. Kg2 Nd2 20. Bxc6 Bxc6 21.
+Qa3 Nxb1 22. Qxa7 Nxc3 23. a3 Ne2 24. a4 Qd7 25. a5 bxa5 26. Qxa5 Nxd4 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "nirajnaik"]
+[Result "1-0"]
+[CurrentPosition "8/4k3/8/p3PK2/Pp6/1P6/7B/8 b - - 2 41"]
+[Timezone "UTC"]
+[ECO "C47"]
+[ECOUrl "https://www.chess.com/openings/Four-Knights-Game-Scotch-Variation-Accepted-5.Nxd4"]
+[UTCDate "2026.11.23"]
+[UTCTime "23:29:53"]
+[WhiteElo "399"]
+[BlackElo "374"]
+[TimeControl "180"]
+[Termination "deidaradzn won by resignation"]
+[StartTime "23:29:53"]
+[EndDate "2026.11.23"]
+[EndTime "23:34:32"]
+[Link "https://www.chess.com/game/live/187874114666"]
+
+1. e4 e5 2. Nf3 Nf6 3. Nc3 Nc6 4. d4 exd4 5. Nxd4 Nxd4 6. Qxd4 d5 7. e5 Ng4 8.
+Bf4 Be6 9. Be2 Qd7 10. O-O-O O-O-O 11. Bf3 Nh6 12. Nxd5 Bxd5 13. Bxd5 Qxd5 14.
+Qxd5 Rxd5 15. Rxd5 Ng4 16. Rf1 b6 17. h3 Nh2 18. Bxh2 Bc5 19. Rfd1 Bxf2 20.
+R1d2 Be3 21. Kd1 Bxd2 22. Rxd2 Rd8 23. Rxd8+ Kxd8 24. Ke2 g6 25. Ke3 f5 26. c4
+c6 27. g4 fxg4 28. hxg4 h5 29. Kf4 hxg4 30. Kxg4 b5 31. cxb5 cxb5 32. b3 Ke7
+33. Kf4 a5 34. a3 Ke6 35. a4 b4 36. Bg1 g5+ 37. Ke4 g4 38. Bh2 Ke7 39. Kf4 Ke6
+40. Kxg4 Ke7 41. Kf5 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "arshop22"]
+[Black "deidaradzn"]
+[Result "0-1"]
+[CurrentPosition "4rk2/1p3ppp/p6q/8/6b1/2P1PN2/PP2BP2/1R2R1K1 w - - 2 26"]
+[Timezone "UTC"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Chigorin-Variation-2...Nf6-3.Bf4"]
+[UTCDate "2026.11.23"]
+[UTCTime "23:22:33"]
+[WhiteElo "369"]
+[BlackElo "391"]
+[TimeControl "180"]
+[Termination "deidaradzn won on time"]
+[StartTime "23:22:33"]
+[EndDate "2026.11.23"]
+[EndTime "23:28:51"]
+[Link "https://www.chess.com/game/live/187873813276"]
+
+1. d4 d5 2. Nc3 Nf6 3. Bf4 Nc6 4. Nb5 a6 5. Nxc7+ Kd7 6. Nxa8 e6 7. Nf3 Be7 8.
+Bc7 Qf8 9. Bf4 Bd6 10. Nb6+ Kd8 11. Bxd6 Qxd6 12. e3 Re8 13. Bd3 Qb4+ 14. c3
+Qxb6 15. O-O e5 16. Re1 Bg4 17. h3 Bh5 18. dxe5 Nxe5 19. g4 Nfxg4 20. hxg4 Bxg4
+21. Be2 Qh6 22. Qxd5+ Ke7 23. Qxe5+ Kf8 24. Qd6+ Qxd6 25. Rab1 Qh6 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "sbonk33"]
+[Result "0-1"]
+[CurrentPosition "r2qk2r/ppp1bpQp/8/1b6/4N3/8/PPn2PPP/R1B1K2R w KQkq - 0 13"]
+[Timezone "UTC"]
+[ECO "C00"]
+[ECOUrl "https://www.chess.com/openings/French-Defense-Knight-Variation-2...d5"]
+[UTCDate "2026.11.23"]
+[UTCTime "23:17:34"]
+[WhiteElo "383"]
+[BlackElo "404"]
+[TimeControl "180"]
+[Termination "sbonk33 won by checkmate"]
+[StartTime "23:17:34"]
+[EndDate "2026.11.23"]
+[EndTime "23:19:16"]
+[Link "https://www.chess.com/game/live/187873606504"]
+
+1. e4 e6 2. Nf3 d5 3. d4 dxe4 4. Ng5 Nf6 5. Nc3 Be7 6. Ngxe4 Nxe4 7. Nxe4 Nc6
+8. Bb5 Bd7 9. d5 exd5 10. Qxd5 Nb4 11. Qd4 Bxb5 12. Qxg7 Nxc2# 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "wojtalando1211"]
+[Result "0-1"]
+[CurrentPosition "8/8/1kpQ1R2/8/8/4r3/6PK/q7 w - - 4 37"]
+[Timezone "UTC"]
+[ECO "B01"]
+[ECOUrl "https://www.chess.com/openings/Scandinavian-Defense-Mieses-Kotrc-Variation-3.Nc3-Qe5"]
+[UTCDate "2026.11.23"]
+[UTCTime "21:34:20"]
+[WhiteElo "391"]
+[BlackElo "425"]
+[TimeControl "180"]
+[Termination "wojtalando1211 won on time"]
+[StartTime "21:34:20"]
+[EndDate "2026.11.23"]
+[EndTime "21:38:55"]
+[Link "https://www.chess.com/game/live/187868694762"]
+
+1. e4 d5 2. exd5 Qxd5 3. Nc3 Qe5+ 4. Qe2 Qxe2+ 5. Bxe2 e5 6. Nf3 Nc6 7. Nb5 Bg4
+8. Nxc7+ Kd7 9. Nxa8 Bxf3 10. Bxf3 Kc8 11. Bxc6 bxc6 12. d4 exd4 13. Bf4 Kb7
+14. Nc7 Bb4+ 15. c3 dxc3 16. bxc3 Bxc3+ 17. Bd2 Bxa1 18. O-O Be5 19. Ne8 Nh6
+20. Bxh6 gxh6 21. f4 Rxe8 22. fxe5 Rxe5 23. Rxf7+ Kb6 24. Rxh7 Re1+ 25. Kf2 Ra1
+26. Rxh6 Rxa2+ 27. Kg3 a5 28. h4 Kb5 29. Rf6 a4 30. h5 Ra3+ 31. Kh2 Re3 32. h6
+a3 33. h7 a2 34. h8=Q a1=Q 35. Qb8+ Kc5 36. Qd6+ Kb6 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.23"]
+[Round "-"]
+[White "MeowingtonFlappy"]
+[Black "deidaradzn"]
+[Result "1-0"]
+[CurrentPosition "2kr3r/Qpp3pp/3b4/8/3P1B2/8/PPPK1PP1/R5q1 b - - 3 19"]
+[Timezone "UTC"]
+[ECO "C00"]
+[ECOUrl "https://www.chess.com/openings/French-Defense-Knight-Variation-2...d5-3.exd5"]
+[UTCDate "2026.11.23"]
+[UTCTime "01:59:45"]
+[WhiteElo "408"]
+[BlackElo "399"]
+[TimeControl "180"]
+[Termination "MeowingtonFlappy won on time"]
+[StartTime "01:59:45"]
+[EndDate "2026.11.23"]
+[EndTime "02:04:02"]
+[Link "https://www.chess.com/game/live/187806467954"]
+
+1. e4 e6 2. Nf3 d5 3. exd5 e5 4. Nxe5 Nf6 5. Qf3 Nxd5 6. Bc4 Be6 7. Nxf7 Bxf7
+8. Nc3 Nxc3 9. Qxc3 Bxc4 10. Qxc4 Qe7+ 11. Kd1 Nc6 12. Re1 Ne5 13. Qf4 O-O-O
+14. Rxe5 Qd6 15. Qa4 Qxe5 16. Qxa7 Bd6 17. d4 Qxh2 18. Bf4 Qg1+ 19. Kd2 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.22"]
+[Round "-"]
+[White "AaronS2020"]
+[Black "deidaradzn"]
+[Result "1-0"]
+[CurrentPosition "8/1p5p/1k6/2q5/1p6/1P6/P2K4/8 b - - 2 54"]
+[Timezone "UTC"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Accelerated-London-System-2...Nc6"]
+[UTCDate "2026.11.22"]
+[UTCTime "05:59:27"]
+[WhiteElo "694"]
+[BlackElo "656"]
+[TimeControl "600"]
+[Termination "AaronS2020 won on time"]
+[StartTime "05:59:27"]
+[EndDate "2026.11.22"]
+[EndTime "06:19:03"]
+[Link "https://www.chess.com/game/live/187743978970"]
+
+1. d4 d5 2. Bf4 Nc6 3. e3 f6 4. c3 e5 5. dxe5 fxe5 6. Bg3 Bf5 7. Nd2 Qd7 8. e4
+Bg4 9. f3 Be6 10. exd5 Bxd5 11. Qe2 Bd6 12. f4 O-O-O 13. fxe5 Re8 14. O-O-O
+Bxe5 15. Bh4 Bf6 16. Qh5 Re5 17. Bg5 Rxg5 18. Qh3 Be6 19. Qe3 Bg4 20. Ngf3 Re5
+21. Nxe5 Nxe5 22. Re1 Nd3+ 23. Bxd3 c6 24. Ne4 Be5 25. h3 Bf5 26. Rhf1 Nh6 27.
+Qb6 axb6 28. Re3 Bf4 29. Rxf4 Re8 30. Kd2 g5 31. Nxg5 Rxe3 32. Kxe3 Qxd3+ 33.
+Kf2 Qd2+ 34. Kg3 c5 35. Rf2 Qxg5+ 36. Kf3 b5 37. g4 Nxg4 38. hxg4 Qxg4+ 39. Ke3
+Qg3+ 40. Rf3 Qg5+ 41. Kf2 Be4 42. Rf8+ Kc7 43. Rf7+ Kb6 44. Ke2 Qh5+ 45. Ke3
+Qxf7 46. Kxe4 Qe7+ 47. Kd5 Qd7+ 48. Ke4 Qe7+ 49. Kf5 Qd7+ 50. Ke4 Qc6+ 51. Ke3
+b4 52. cxb4 cxb4 53. b3 Qc5+ 54. Kd2 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.22"]
+[Round "-"]
+[White "Goodnightss_baobei"]
+[Black "deidaradzn"]
+[Result "0-1"]
+[CurrentPosition "3Q4/p7/7p/2p2bpk/4r3/8/PP1R1KPP/8 w - - 11 36"]
+[Timezone "UTC"]
+[ECO "C03"]
+[ECOUrl "https://www.chess.com/openings/French-Defense-Tarrasch-Guimard-Defense"]
+[UTCDate "2026.11.22"]
+[UTCTime "00:04:12"]
+[WhiteElo "401"]
+[BlackElo "455"]
+[TimeControl "60"]
+[Termination "deidaradzn won on time"]
+[StartTime "00:04:12"]
+[EndDate "2026.11.22"]
+[EndTime "00:06:20"]
+[Link "https://www.chess.com/game/live/187731316136"]
+
+1. e4 e6 2. d4 d5 3. Nd2 Nc6 4. exd5 exd5 5. Bb5 Bd7 6. Bxc6 Bxc6 7. Ngf3 Nf6
+8. O-O Bd6 9. Qe1+ Qe7 10. Qxe7+ Bxe7 11. Re1 O-O 12. Rxe7 Rfe8 13. Rxc7 Ne4
+14. Nxe4 dxe4 15. Ne1 f5 16. Bg5 Rac8 17. Rxc8 Rxc8 18. f3 h6 19. Be7 Re8 20.
+Bc5 b6 21. fxe4 bxc5 22. exf5 Be4 23. d5 Bxf5 24. d6 Rd8 25. Rd1 Bxc2 26. Rd2
+Bf5 27. Nf3 g5 28. Ne5 Re8 29. d7 Rxe5 30. d8=Q+ Kg7 31. Qc7+ Kg6 32. Qc6+ Re6
+33. Qc7 Kh5 34. Qd8 Re1+ 35. Kf2 Re4 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.21"]
+[Round "-"]
+[White "deidaradzn"]
+[Black "Howcoulditbe01209"]
+[Result "1-0"]
+[CurrentPosition "1r2kb2/pP2p3/5pp1/1Q2pq2/4N3/8/PPP4r/R1K1R3 b - - 0 25"]
+[Timezone "UTC"]
+[ECO "D00"]
+[ECOUrl "https://www.chess.com/openings/Queens-Pawn-Opening-Blackmar-Blackmar-Diemer-Gambit-3...Nf6-4.f3-exf3-5.Nxf3"]
+[UTCDate "2026.11.21"]
+[UTCTime "23:59:15"]
+[WhiteElo "433"]
+[BlackElo "390"]
+[TimeControl "60"]
+[Termination "deidaradzn won on time"]
+[StartTime "23:59:15"]
+[EndDate "2026.11.22"]
+[EndTime "00:01:23"]
+[Link "https://www.chess.com/game/live/187731126074"]
+
+1. e4 d5 2. d4 dxe4 3. f3 Nf6 4. Nc3 exf3 5. Nxf3 Nc6 6. Bg5 Bf5 7. Bxf6 gxf6
+8. Bd3 Bg6 9. Bxg6 hxg6 10. O-O Qd6 11. Nb5 Qd7 12. d5 Ne5 13. Nxe5 fxe5 14.
+Nc3 f6 15. Re1 Qf5 16. g4 Qg5 17. Ne4 Qh6 18. Qd3 Qxh2+ 19. Kf1 Qf4+ 20. Ke2
+Rh2+ 21. Kd1 Qxg4+ 22. Kc1 Qf5 23. Qb5+ c6 24. dxc6 Rb8 25. cxb7+ 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.21"]
+[Round "-"]
+[White "jobbidobbi"]
+[Black "deidaradzn"]
+[Result "1-0"]
+[CurrentPosition "8/ppp2p1k/6p1/5b2/8/1K1Pr1nP/PP3R2/4R3 b - - 0 27"]
+[Timezone "UTC"]
+[ECO "A00"]
+[ECOUrl "https://www.chess.com/openings/Mieses-Opening-1...d5"]
+[UTCDate "2026.11.21"]
+[UTCTime "23:57:11"]
+[WhiteElo "450"]
+[BlackElo "408"]
+[TimeControl "60"]
+[Termination "jobbidobbi won on time"]
+[StartTime "23:57:11"]
+[EndDate "2026.11.21"]
+[EndTime "23:59:11"]
+[Link "https://www.chess.com/game/live/187731046576"]
+
+1. d3 d5 2. e3 Nc6 3. c4 Nf6 4. e4 e6 5. cxd5 exd5 6. exd5 Nxd5 7. Nf3 Bc5 8.
+Qe2+ Qe7 9. Qxe7+ Ndxe7 10. Ng5 O-O 11. Nxh7 Kxh7 12. Be2 Re8 13. Bh5 g6 14.
+Bg4 Nf5+ 15. Be3 Bxe3 16. fxe3 Rxe3+ 17. Kd2 Ncd4 18. Nc3 Bd7 19. Nd5 Rae8 20.
+Nxe3 Nxe3 21. Kc3 Nxg4 22. h3 Ne2+ 23. Kb3 Bf5 24. Rae1 Re3 25. g3 Nf2 26. Rhf1
+Nxg3 27. Rxf2 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.11.21"]
+[Round "-"]
+[White "Ishvar01"]
+[Black "deidaradzn"]
+[Result "1-0"]
+[CurrentPosition "8/1k5R/p1n5/2pN1p2/8/8/1PP2PP1/2KR1B2 b - - 3 35"]
+[Timezone "UTC"]
+[ECO "C10"]
+[ECOUrl "https://www.chess.com/openings/French-Defense-Normal-Variation-2...d5-3.Nc3-Nc6-4.Nf3"]
+[UTCDate "2026.11.21"]
+[UTCTime "21:29:36"]
+[WhiteElo "674"]
+[BlackElo "663"]
+[TimeControl "600"]
+[Termination "Ishvar01 won on time"]
+[StartTime "21:29:36"]
+[EndDate "2026.11.21"]
+[EndTime "21:48:01"]
+[Link "https://www.chess.com/game/live/187724400838"]
+
+1. e4 e6 2. d4 d5 3. Nc3 Nc6 4. Nf3 f5 5. Qe2 Nge7 6. e5 b6 7. Qb5 Bb7 8. Bf4
+a6 9. Qe2 Qd7 10. O-O-O O-O-O 11. Qd3 Ng6 12. Bg5 Be7 13. h4 Nb4 14. Qd2 Rhf8
+15. h5 Nh8 16. h6 Rf7 17. hxg7 Rxg7 18. a3 Nc6 19. Na4 Rf8 20. Bh6 Bd8 21. Bxg7
+Qxg7 22. Qh6 Bg5+ 23. Nxg5 Qe7 24. Nxe6 b5 25. Nac5 Nxd4 26. Qxf8+ Qxf8 27.
+Nxf8 Nc6 28. Nxb7 Kxb7 29. Nxh7 Nf7 30. Nf6 Nfxe5 31. Nxd5 b4 32. axb4 Nxb4 33.
+Nxb4 c5 34. Nd5 Nc6 35. Rh7+ 1-0

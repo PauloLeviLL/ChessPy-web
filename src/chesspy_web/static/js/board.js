@@ -1,4 +1,8 @@
 const boardElement = document.getElementById("board");
+const boardWrapperElement = document.getElementById("board-wrapper");
+const savedArrowsGroup = document.getElementById("saved-arrows-group");
+const previewArrowGroup = document.getElementById("preview-arrow-group");
+
 const statusElement = document.getElementById("status");
 const checkWarningElement = document.getElementById("check-warning");
 const panelSubtitleElement = document.getElementById("panel-subtitle");
@@ -55,6 +59,8 @@ const BOT_LEVELS = {
 };
 
 const ANIMATION_DURATION = 160;
+const SVG_NS = "http://www.w3.org/2000/svg";
+const ARROW_SQUARE_SIZE = 100; // viewBox 0..800
 
 // Configuração ativa e rascunho da tela de Configuração de partida.
 let draftConfig = {
@@ -80,6 +86,12 @@ let selectedSquare = null;
 let dragging = null;
 let animation = null;
 
+// Estado das setas desenhadas com botão direito (coordenadas lógicas col/row 0..7).
+const drawnArrows = [];
+let isRightDrawing = false;
+let arrowStartCell = null;
+let arrowHoverCell = null;
+
 let busy = false;
 let gameActive = false;
 
@@ -101,6 +113,261 @@ let currentSearchQuery = "";
 
 function generateRecordId() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+// --------------------------------------------------
+// SETAS COM BOTÃO DIREITO (ESTILO CHESS.COM + "L")
+// --------------------------------------------------
+
+function sameGridCell(a, b) {
+    return Boolean(a && b && a.col === b.col && a.row === b.row);
+}
+
+function getLogicalCellFromClientPoint(clientX, clientY) {
+    const targetEl = boardElement || boardWrapperElement;
+    if (!targetEl) {
+        return null;
+    }
+
+    const rect = targetEl.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+        return null;
+    }
+
+    const relX = (clientX - rect.left) / rect.width;
+    const relY = (clientY - rect.top) / rect.height;
+
+    if (relX < 0 || relX >= 1 || relY < 0 || relY >= 1) {
+        return null;
+    }
+
+    let col = Math.floor(relX * 8);
+    let row = Math.floor(relY * 8);
+
+    if (isBoardFlipped()) {
+        col = 7 - col;
+        row = 7 - row;
+    }
+
+    return { col, row };
+}
+
+function logicalCellToSvgCenter(cell) {
+    const visualCol = isBoardFlipped() ? 7 - cell.col : cell.col;
+    const visualRow = isBoardFlipped() ? 7 - cell.row : cell.row;
+
+    return {
+        x: visualCol * ARROW_SQUARE_SIZE + ARROW_SQUARE_SIZE / 2,
+        y: visualRow * ARROW_SQUARE_SIZE + ARROW_SQUARE_SIZE / 2
+    };
+}
+
+function isKnightJump(fromCell, toCell) {
+    const dc = Math.abs(toCell.col - fromCell.col);
+    const dr = Math.abs(toCell.row - fromCell.row);
+    return (dc === 2 && dr === 1) || (dc === 1 && dr === 2);
+}
+
+/**
+ * Gera o contorno poligonal único da seta (corpo + ponta triangular sem sobreposição).
+ * Suporta setas retas/diagonais e dobra ortogonal em "L" para movimentos de cavalo.
+ */
+function buildChessArrowPathData(fromCell, toCell) {
+    const start = logicalCellToSvgCenter(fromCell);
+    const end = logicalCellToSvgCenter(toCell);
+
+    const shaftHalf = 10.5;   // meia largura do corpo (total 21px no viewBox 800)
+    const headHalf = 25;      // meia largura das asas da ponta (total 50px)
+    const headLength = 38;    // comprimento da ponta triangular
+    const startMargin = 24;   // recuo no centro da casa de origem
+    const endMargin = 14;     // recuo no centro da casa de destino
+
+    if (!isKnightJump(fromCell, toCell)) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 1) {
+            return "";
+        }
+
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const px = -uy;
+        const py = ux;
+
+        const sx = start.x + ux * startMargin;
+        const sy = start.y + uy * startMargin;
+
+        const tipX = end.x - ux * endMargin;
+        const tipY = end.y - uy * endMargin;
+
+        const neckX = tipX - ux * headLength;
+        const neckY = tipY - uy * headLength;
+
+        const pts = [
+            [sx + px * shaftHalf, sy + py * shaftHalf],
+            [neckX + px * shaftHalf, neckY + py * shaftHalf],
+            [neckX + px * headHalf, neckY + py * headHalf],
+            [tipX, tipY],
+            [neckX - px * headHalf, neckY - py * headHalf],
+            [neckX - px * shaftHalf, neckY - py * shaftHalf],
+            [sx - px * shaftHalf, sy - py * shaftHalf]
+        ];
+
+        return pts
+            .map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
+            .join(" ") + " Z";
+    }
+
+    // Seta em "L" do cavalo: perna longa (2 casas) + dobra 90° + perna curta (1 casa)
+    const dc = Math.abs(toCell.col - fromCell.col);
+    const elbow = dc === 2
+        ? { x: end.x, y: start.y }
+        : { x: start.x, y: end.y };
+
+    // Vetor da primeira perna (start -> elbow)
+    const d1x = elbow.x - start.x;
+    const d1y = elbow.y - start.y;
+    const len1 = Math.hypot(d1x, d1y);
+    const u1x = d1x / len1;
+    const u1y = d1y / len1;
+
+    // Vetor da segunda perna (elbow -> end)
+    const d2x = end.x - elbow.x;
+    const d2y = end.y - elbow.y;
+    const len2 = Math.hypot(d2x, d2y);
+    const u2x = d2x / len2;
+    const u2y = d2y / len2;
+
+    // Produto vetorial indica se vira à esquerda (-1) ou direita (+1)
+    const turn = Math.sign(u1x * u2y - u1y * u2x);
+
+    // Normal apontando para o lado interno da curva
+    const inX = -u1y * turn;
+    const inY = u1x * turn;
+
+    const sx = start.x + u1x * startMargin;
+    const sy = start.y + u1y * startMargin;
+
+    const tipX = end.x - u2x * endMargin;
+    const tipY = end.y - u2y * endMargin;
+
+    const neckX = tipX - u2x * headLength;
+    const neckY = tipY - u2y * headLength;
+
+    // Canto externo e canto interno da dobra de 90°
+    const outerCornerX = elbow.x + u1x * shaftHalf - inX * shaftHalf;
+    const outerCornerY = elbow.y + u1y * shaftHalf - inY * shaftHalf;
+
+    const innerCornerX = elbow.x - u1x * shaftHalf + inX * shaftHalf;
+    const innerCornerY = elbow.y - u1y * shaftHalf + inY * shaftHalf;
+
+    // Normal perpendicular à segunda perna
+    const p2x = -u2y;
+    const p2y = u2x;
+
+    // Garante que o lado externo da ponta acompanhe o lado externo do cotovelo
+    const neckOuterX = neckX - inX * 0 + (turn > 0 ? p2x : -p2x) * -shaftHalf;
+    const neckOuterY = neckY - inY * 0 + (turn > 0 ? p2y : -p2y) * -shaftHalf;
+
+    const headOuterX = neckX + (turn > 0 ? p2x : -p2x) * -headHalf;
+    const headOuterY = neckY + (turn > 0 ? p2y : -p2y) * -headHalf;
+
+    const headInnerX = neckX + (turn > 0 ? p2x : -p2x) * headHalf;
+    const headInnerY = neckY + (turn > 0 ? p2y : -p2y) * headHalf;
+
+    const neckInnerX = neckX + (turn > 0 ? p2x : -p2x) * shaftHalf;
+    const neckInnerY = neckY + (turn > 0 ? p2y : -p2y) * shaftHalf;
+
+    const pts = [
+        [sx - inX * shaftHalf, sy - inY * shaftHalf],
+        [outerCornerX, outerCornerY],
+        [neckOuterX, neckOuterY],
+        [headOuterX, headOuterY],
+        [tipX, tipY],
+        [headInnerX, headInnerY],
+        [neckInnerX, neckInnerY],
+        [innerCornerX, innerCornerY],
+        [sx + inX * shaftHalf, sy + inY * shaftHalf]
+    ];
+
+    return pts
+        .map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
+        .join(" ") + " Z";
+}
+
+function createSvgArrowPath(fromCell, toCell, isPreview = false) {
+    const d = buildChessArrowPathData(fromCell, toCell);
+    const pathEl = document.createElementNS(SVG_NS, "path");
+    pathEl.setAttribute("d", d);
+    pathEl.setAttribute(
+        "class",
+        isPreview ? "chess-arrow-shape preview" : "chess-arrow-shape"
+    );
+    return pathEl;
+}
+
+function renderSavedArrows() {
+    if (!savedArrowsGroup) {
+        return;
+    }
+
+    savedArrowsGroup.innerHTML = "";
+    for (const arrow of drawnArrows) {
+        if (!sameGridCell(arrow.from, arrow.to)) {
+            savedArrowsGroup.appendChild(createSvgArrowPath(arrow.from, arrow.to, false));
+        }
+    }
+}
+
+function renderPreviewArrow() {
+    if (!previewArrowGroup) {
+        return;
+    }
+
+    previewArrowGroup.innerHTML = "";
+    if (
+        isRightDrawing &&
+        arrowStartCell &&
+        arrowHoverCell &&
+        !sameGridCell(arrowStartCell, arrowHoverCell)
+    ) {
+        previewArrowGroup.appendChild(
+            createSvgArrowPath(arrowStartCell, arrowHoverCell, true)
+        );
+    }
+}
+
+function toggleArrow(fromCell, toCell) {
+    if (sameGridCell(fromCell, toCell)) {
+        return;
+    }
+
+    const existingIndex = drawnArrows.findIndex(
+        item => sameGridCell(item.from, fromCell) && sameGridCell(item.to, toCell)
+    );
+
+    if (existingIndex >= 0) {
+        drawnArrows.splice(existingIndex, 1);
+    } else {
+        drawnArrows.push({ from: fromCell, to: toCell });
+    }
+
+    renderSavedArrows();
+}
+
+function clearDrawnArrows() {
+    isRightDrawing = false;
+    arrowStartCell = null;
+    arrowHoverCell = null;
+
+    if (previewArrowGroup) {
+        previewArrowGroup.innerHTML = "";
+    }
+
+    if (drawnArrows.length > 0) {
+        drawnArrows.length = 0;
+        renderSavedArrows();
+    }
 }
 
 
@@ -212,6 +479,9 @@ function updateBoardOrientationUI() {
     if (playSidebarElement) {
         playSidebarElement.classList.toggle("flipped-players", flipped);
     }
+
+    renderSavedArrows();
+    renderPreviewArrow();
 }
 
 
@@ -819,6 +1089,9 @@ function renderBoard() {
         boardElement.appendChild(marker);
     }
 
+    renderSavedArrows();
+    renderPreviewArrow();
+
     updateStatus();
     updateTurnIndicators();
     renderHistory();
@@ -948,6 +1221,7 @@ function applyGameState(data) {
     selectedSquare = null;
     dragging = null;
     animation = null;
+    clearDrawnArrows();
 
     viewPly = gameState.total_plies;
 
@@ -991,6 +1265,7 @@ async function triggerBotMoveIfNeeded() {
         gameState = data;
         viewPly = gameState.total_plies;
         selectedSquare = null;
+        clearDrawnArrows();
 
         if (!isUntimedMatch() && activeConfig.incrementSeconds > 0 && clockStarted) {
             if (movingPiece?.color === "white") {
@@ -1107,6 +1382,7 @@ async function makeMove(fromSquare, toSquare, animate = true) {
         gameState = data;
         viewPly = gameState.total_plies;
         selectedSquare = null;
+        clearDrawnArrows();
 
         if (!isUntimedMatch() && activeConfig.incrementSeconds > 0 && clockStarted) {
             if (movingPiece?.color === "white") {
@@ -1187,6 +1463,7 @@ function goToNewGameSetup() {
     stopClock();
     isMatchConfigured = false;
     gameActive = false;
+    clearDrawnArrows();
 
     if (playTabButton) {
         playTabButton.disabled = true;
@@ -1205,7 +1482,6 @@ async function resetGame() {
         return;
     }
 
-    // Se a partida já terminou (xeque-mate, empate ou tempo), redireciona para Configurar nova partida.
     if (!gameActive) {
         goToNewGameSetup();
         return;
@@ -1234,7 +1510,6 @@ async function resetGame() {
             );
         }
 
-        // Mantém o gameId do backend intacto e gera apenas um novo ID de registro para o SQLite.
         sessionRecordId = generateRecordId();
 
         stopClock();
@@ -1369,6 +1644,7 @@ async function startConfiguredGame() {
         gameId = data.game_id;
         sessionRecordId = generateRecordId();
         isMatchConfigured = true;
+        clearDrawnArrows();
 
         if (playTabButton) {
             playTabButton.disabled = false;
@@ -1902,7 +2178,7 @@ function initSettingsControls() {
 
 
 // --------------------------------------------------
-// EVENTOS DO TABULEIRO
+// EVENTOS DO TABULEIRO (PEÇAS + SETAS BOTÃO DIREITO)
 // --------------------------------------------------
 
 boardElement.addEventListener("contextmenu", event => {
@@ -1910,6 +2186,25 @@ boardElement.addEventListener("contextmenu", event => {
 });
 
 boardElement.addEventListener("pointerdown", event => {
+    // Botão direito: inicia desenho de seta (funciona até no modo visualização ou turno do bot)
+    if (event.button === 2) {
+        event.preventDefault();
+        const cell = getLogicalCellFromClientPoint(event.clientX, event.clientY);
+        if (!cell) {
+            return;
+        }
+        isRightDrawing = true;
+        arrowStartCell = cell;
+        arrowHoverCell = cell;
+        renderPreviewArrow();
+        return;
+    }
+
+    // Botão esquerdo: limpa setas desenhadas
+    if (event.button === 0) {
+        clearDrawnArrows();
+    }
+
     if (
         !isMatchConfigured ||
         event.button !== 0 ||
@@ -1939,6 +2234,12 @@ boardElement.addEventListener("pointerdown", event => {
 
 
 document.addEventListener("pointermove", event => {
+    if (isRightDrawing) {
+        arrowHoverCell = getLogicalCellFromClientPoint(event.clientX, event.clientY);
+        renderPreviewArrow();
+        return;
+    }
+
     if (dragging) {
         positionDraggedPiece(
             event.clientX,
@@ -1950,6 +2251,28 @@ document.addEventListener("pointermove", event => {
 
 
 document.addEventListener("pointerup", async event => {
+    if (event.button === 2) {
+        if (!isRightDrawing) {
+            return;
+        }
+
+        const endCell =
+            getLogicalCellFromClientPoint(event.clientX, event.clientY) || arrowHoverCell;
+
+        isRightDrawing = false;
+        if (previewArrowGroup) {
+            previewArrowGroup.innerHTML = "";
+        }
+
+        if (arrowStartCell && endCell && !sameGridCell(arrowStartCell, endCell)) {
+            toggleArrow(arrowStartCell, endCell);
+        }
+
+        arrowStartCell = null;
+        arrowHoverCell = null;
+        return;
+    }
+
     if (!isMatchConfigured || busy || !gameState || !gameActive || isBotTurn()) {
         dragging = null;
         return;
@@ -2029,15 +2352,6 @@ document.addEventListener("pointerup", async event => {
     }
 
     renderBoard();
-});
-
-
-document.addEventListener("pointercancel", () => {
-    if (dragging) {
-        dragging = null;
-        selectedSquare = null;
-        renderBoard();
-    }
 });
 
 

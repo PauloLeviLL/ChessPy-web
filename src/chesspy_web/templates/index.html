@@ -12,9 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/static/css/style.css?v=4">
+    <link rel="stylesheet" href="/static/css/style.css?v=5">
 
-    <script src="/static/js/board.js?v=4" defer></script>
+    <script src="/static/js/board.js?v=5" defer></script>
 </head>
 
 <body>
@@ -99,12 +99,22 @@
                                     <span>1</span>
                                 </div>
 
-                                <div class="board-wrapper">
+                                <div class="board-wrapper" id="board-wrapper">
                                     <div
                                         id="board"
                                         class="board"
                                         aria-label="Tabuleiro de xadrez"
                                     ></div>
+
+                                    <svg
+                                        id="right-click-arrows-layer"
+                                        class="arrows-overlay"
+                                        viewBox="0 0 800 800"
+                                        aria-hidden="true"
+                                    >
+                                        <g id="saved-arrows-group"></g>
+                                        <g id="preview-arrow-group"></g>
+                                    </svg>
                                 </div>
 
                                 <div class="file-coordinates" id="file-coordinates">

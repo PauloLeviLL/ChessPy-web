@@ -273,6 +273,7 @@ a {
 }
 
 .board-wrapper {
+    position: relative;
     width: 100%;
     aspect-ratio: 1 / 1;
     min-width: 0;
@@ -293,6 +294,25 @@ a {
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
+}
+
+.arrows-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.chess-arrow-shape {
+    fill: rgba(255, 170, 0, 0.82);
+    stroke: none;
+    transition: opacity 0.08s ease;
+}
+
+.chess-arrow-shape.preview {
+    fill: rgba(255, 170, 0, 0.52);
 }
 
 .rank-coordinates,
