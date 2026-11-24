@@ -143,7 +143,7 @@ let arrowHoverCell = null;
 let analysisGame = null;
 let analysisPly = 0;
 let analysisFlipped = false;
-let analysisReport = null; // { perPly: [...], summary: {...} }
+let analysisReport = null; // { engine?: "stockfish", perPly: [...], summary: {...} }
 const analysisCustomArrows = [];
 let isAnalysisRightDrawing = false;
 let analysisArrowStart = null;
@@ -1178,7 +1178,7 @@ function renderBoard() {
 
 
 // --------------------------------------------------
-// ANÁLISE DE PARTIDA (AVALIAÇÃO, MELHOR LANCE E CLASSIFICAÇÕES)
+// ANÁLISE DE PARTIDA (STOCKFISH + FALLBACK LOCAL)
 // --------------------------------------------------
 
 function evaluateMaterialBalance(pieces = {}) {
@@ -1213,14 +1213,12 @@ function estimateBestMoveForState(state) {
             delta += isWhite ? capVal : -capVal;
         }
 
-        // Leve bônus posicional para centro do tabuleiro
         const centerFiles = ["d", "e"];
         const centerRanks = ["4", "5"];
         if (centerFiles.includes(to[0]) && centerRanks.includes(to[1])) {
             delta += isWhite ? 0.3 : -0.3;
         }
 
-        // Penaliza expor peça valiosa se casa de destino for central/avançada sem defesa explícita
         if (movingPiece && PIECE_VALUES[movingPiece.type] >= 3) {
             delta += isWhite ? 0.15 : -0.15;
         }
@@ -1267,7 +1265,7 @@ function buildAnalysisReport(game) {
     };
 
     if (!timeline.length) {
-        return { perPly: [], summary };
+        return { engine: "local", perPly: [], summary };
     }
 
     const evals = timeline.map(st => {
@@ -1305,6 +1303,7 @@ function buildAnalysisReport(game) {
         return {
             ply: idx,
             evalScore: evals[idx],
+            evalText: formatEvalText(evals[idx]),
             bestMove,
             playedMove,
             classification,
@@ -1312,7 +1311,7 @@ function buildAnalysisReport(game) {
         };
     });
 
-    return { perPly, summary };
+    return { engine: "local", perPly, summary };
 }
 
 function formatEvalText(score) {
@@ -1324,7 +1323,7 @@ function formatEvalText(score) {
     return "0.0";
 }
 
-function renderEvalBar(score) {
+function renderEvalBar(score, customText = null) {
     if (!analysisEvalBlackEl || !analysisEvalWhiteEl || !analysisEvalScoreEl) {
         return;
     }
@@ -1336,7 +1335,7 @@ function renderEvalBar(score) {
 
     analysisEvalWhiteEl.style.height = `${whitePct.toFixed(1)}%`;
     analysisEvalBlackEl.style.height = `${blackPct.toFixed(1)}%`;
-    analysisEvalScoreEl.textContent = formatEvalText(score);
+    analysisEvalScoreEl.textContent = customText || formatEvalText(score);
 }
 
 function renderAnalysisClassificationSummary() {
@@ -1581,7 +1580,7 @@ function renderAnalysisView() {
         analysisMetaInline.textContent = analysisGame ? `${analysisPly} / ${maxPly}` : "0 / 0";
     }
 
-    renderEvalBar(plyInfo ? plyInfo.evalScore : 0);
+    renderEvalBar(plyInfo ? plyInfo.evalScore : 0, plyInfo?.evalText || null);
     renderAnalysisClassificationSummary();
 
     if (analysisPlyLabel) {
@@ -1679,10 +1678,11 @@ function setAnalysisPly(targetPly) {
     renderAnalysisView();
 }
 
-function openGameInAnalysis(game) {
+async function openGameInAnalysis(game) {
     if (!game) {
         return;
     }
+
     analysisGame = game;
     analysisReport = buildAnalysisReport(game);
     analysisPly = Array.isArray(game.timeline) && game.timeline.length > 0
@@ -1692,7 +1692,39 @@ function openGameInAnalysis(game) {
     isAnalysisRightDrawing = false;
     analysisArrowStart = null;
     analysisArrowHover = null;
+
     switchFeatureTab("analysis");
+
+    if (!Array.isArray(game.history) || game.history.length === 0) {
+        return;
+    }
+
+    if (analysisMoveFeedback) {
+        analysisMoveFeedback.textContent = "Analisando partida com Stockfish...";
+    }
+
+    try {
+        const response = await fetch("/api/games/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ history: game.history })
+        });
+
+        if (!response.ok) {
+            renderAnalysisView();
+            return;
+        }
+
+        const stockfishReport = await response.json();
+        if (analysisGame?.id === game.id && Array.isArray(stockfishReport.perPly)) {
+            analysisReport = stockfishReport;
+            renderAnalysisView();
+            showToast("Análise do Stockfish concluída.");
+        }
+    } catch (error) {
+        console.warn("Stockfish indisponível, usando avaliação local:", error);
+        renderAnalysisView();
+    }
 }
 
 

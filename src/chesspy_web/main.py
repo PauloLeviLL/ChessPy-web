@@ -23,14 +23,20 @@ from chesspy_web.friend_bot import FriendStyleBot
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent.parent
 
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+for extra_path in (str(PROJECT_ROOT), str(BASE_DIR.parent), str(BASE_DIR)):
+    if extra_path not in sys.path:
+        sys.path.insert(0, extra_path)
 
 from import_friend_games import (  # noqa: E402
     DEFAULT_USERNAME,
     fetch_chesscom_pgn_for_month,
     merge_pgn_into_file,
 )
+
+try:
+    from chesspy_web.stockfish_analyzer import analyze_game_with_stockfish  # noqa: E402
+except ImportError:
+    from chesspy_web.stockfish_analyzer import analyze_game_with_stockfish  # noqa: E402
 
 
 FRIEND_USERNAME = DEFAULT_USERNAME
@@ -148,6 +154,10 @@ class SaveGameRequest(BaseModel):
     finalPieces: dict
     timeline: list
     history: list
+
+
+class AnalyzeGameRequest(BaseModel):
+    history: list[dict]
 
 
 def get_game(game_id: str) -> GameController:
@@ -298,6 +308,22 @@ def save_game_history(payload: SaveGameRequest):
         record["date"] = datetime.now().strftime("%d/%m/%Y")
     record["id"] = record["id"].upper()
     return upsert_saved_game(record)
+
+
+@app.post("/api/games/analyze")
+def analyze_saved_game(payload: AnalyzeGameRequest):
+    try:
+        return analyze_game_with_stockfish(payload.history)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Falha ao analisar partida com Stockfish: {exc}",
+        )
 
 
 @app.delete("/api/games/{record_id}")
