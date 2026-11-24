@@ -36,6 +36,34 @@ const resetButton = document.getElementById("btn-reset");
 const prevButton = document.getElementById("btn-prev");
 const nextButton = document.getElementById("btn-next");
 
+// Elementos da aba Análise de partida
+const analysisBoardElement = document.getElementById("analysis-board");
+const analysisRankCoordsElement = document.getElementById("analysis-rank-coordinates");
+const analysisFileCoordsElement = document.getElementById("analysis-file-coordinates");
+const analysisBestArrowGroup = document.getElementById("analysis-best-arrow-group");
+const analysisPlayedArrowGroup = document.getElementById("analysis-played-arrow-group");
+const analysisSavedArrowsGroup = document.getElementById("analysis-saved-arrows-group");
+const analysisPreviewArrowGroup = document.getElementById("analysis-preview-arrow-group");
+const analysisBadgesLayer = document.getElementById("analysis-badges-layer");
+
+const analysisEvalBlackEl = document.getElementById("analysis-eval-black");
+const analysisEvalWhiteEl = document.getElementById("analysis-eval-white");
+const analysisEvalScoreEl = document.getElementById("analysis-eval-score");
+
+const analysisPlyLabel = document.getElementById("analysis-ply-label");
+const analysisMoveFeedback = document.getElementById("analysis-move-feedback");
+const analysisGameBadge = document.getElementById("analysis-game-badge");
+const analysisMetaInline = document.getElementById("analysis-meta-inline");
+const analysisClassSummaryEl = document.getElementById("analysis-classification-summary");
+const analysisMovesBody = document.getElementById("analysis-moves-body");
+
+const analysisBtnStart = document.getElementById("analysis-btn-start");
+const analysisBtnPrev = document.getElementById("analysis-btn-prev");
+const analysisBtnNext = document.getElementById("analysis-btn-next");
+const analysisBtnEnd = document.getElementById("analysis-btn-end");
+const analysisBtnFlip = document.getElementById("btn-analysis-flip");
+const analysisBtnBackGames = document.getElementById("btn-back-to-games");
+
 const pieceNames = {
     1: "Peao",
     2: "Cavalo",
@@ -43,6 +71,25 @@ const pieceNames = {
     4: "Torre",
     5: "Rainha",
     6: "Rei"
+};
+
+const PIECE_VALUES = {
+    1: 1.0,
+    2: 3.0,
+    3: 3.2,
+    4: 5.0,
+    5: 9.0,
+    6: 0.0
+};
+
+const MOVE_CLASSIFICATIONS = {
+    brilliant:  { key: "brilliant",  symbol: "!!", label: "Brilhante",  desc: "Lance brilhante com recurso tático forte." },
+    great:      { key: "great",      symbol: "!",  label: "Excelente",  desc: "Mantém ou amplia a vantagem de forma precisa." },
+    good:       { key: "good",       symbol: "✓",  label: "Bom",        desc: "Lance sólido que sustenta a posição." },
+    book:       { key: "book",       symbol: "B",  label: "Livro",      desc: "Teoria de abertura conhecida." },
+    inaccuracy: { key: "inaccuracy", symbol: "?!", label: "Imprecisão", desc: "Perde um pouco de precisão na posição." },
+    mistake:    { key: "mistake",    symbol: "?",  label: "Erro",       desc: "Cede vantagem relevante ao adversário." },
+    blunder:    { key: "blunder",    symbol: "??", label: "Capivarada", desc: "Erro grave (blunder) que compromete a posição." }
 };
 
 const BOT_LEVELS = {
@@ -86,11 +133,21 @@ let selectedSquare = null;
 let dragging = null;
 let animation = null;
 
-// Estado das setas desenhadas com botão direito (coordenadas lógicas col/row 0..7).
+// Estado das setas desenhadas com botão direito na aba Partida.
 const drawnArrows = [];
 let isRightDrawing = false;
 let arrowStartCell = null;
 let arrowHoverCell = null;
+
+// Estado da aba Análise de partida.
+let analysisGame = null;
+let analysisPly = 0;
+let analysisFlipped = false;
+let analysisReport = null; // { perPly: [...], summary: {...} }
+const analysisCustomArrows = [];
+let isAnalysisRightDrawing = false;
+let analysisArrowStart = null;
+let analysisArrowHover = null;
 
 let busy = false;
 let gameActive = false;
@@ -114,6 +171,24 @@ let currentSearchQuery = "";
 function generateRecordId() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
+
+
+function squareToCell(squareName, flipped = false) {
+    if (!squareName || squareName.length < 2) {
+        return null;
+    }
+    const boardCol = "abcdefgh".indexOf(squareName[0]);
+    const boardRow = 8 - Number(squareName[1]);
+    if (boardCol < 0 || boardRow < 0 || boardRow > 7) {
+        return null;
+    }
+    return {
+        col: flipped ? 7 - boardCol : boardCol,
+        row: flipped ? 7 - boardRow : boardRow
+    };
+}
+
+
 // --------------------------------------------------
 // SETAS COM BOTÃO DIREITO (ESTILO CHESS.COM + "L")
 // --------------------------------------------------
@@ -122,8 +197,7 @@ function sameGridCell(a, b) {
     return Boolean(a && b && a.col === b.col && a.row === b.row);
 }
 
-function getLogicalCellFromClientPoint(clientX, clientY) {
-    const targetEl = boardElement || boardWrapperElement;
+function getLogicalCellFromPointForElement(clientX, clientY, targetEl, flipped = false) {
     if (!targetEl) {
         return null;
     }
@@ -143,7 +217,7 @@ function getLogicalCellFromClientPoint(clientX, clientY) {
     let col = Math.floor(relX * 8);
     let row = Math.floor(relY * 8);
 
-    if (isBoardFlipped()) {
+    if (flipped) {
         col = 7 - col;
         row = 7 - row;
     }
@@ -151,14 +225,27 @@ function getLogicalCellFromClientPoint(clientX, clientY) {
     return { col, row };
 }
 
-function logicalCellToSvgCenter(cell) {
-    const visualCol = isBoardFlipped() ? 7 - cell.col : cell.col;
-    const visualRow = isBoardFlipped() ? 7 - cell.row : cell.row;
+function getLogicalCellFromClientPoint(clientX, clientY) {
+    return getLogicalCellFromPointForElement(
+        clientX,
+        clientY,
+        boardElement || boardWrapperElement,
+        isBoardFlipped()
+    );
+}
+
+function cellToSvgCenter(cell, flipped = false) {
+    const visualCol = flipped ? 7 - cell.col : cell.col;
+    const visualRow = flipped ? 7 - cell.row : cell.row;
 
     return {
         x: visualCol * ARROW_SQUARE_SIZE + ARROW_SQUARE_SIZE / 2,
         y: visualRow * ARROW_SQUARE_SIZE + ARROW_SQUARE_SIZE / 2
     };
+}
+
+function logicalCellToSvgCenter(cell) {
+    return cellToSvgCenter(cell, isBoardFlipped());
 }
 
 function isKnightJump(fromCell, toCell) {
@@ -171,15 +258,15 @@ function isKnightJump(fromCell, toCell) {
  * Gera o contorno poligonal único da seta (corpo + ponta triangular sem sobreposição).
  * Suporta setas retas/diagonais e dobra ortogonal em "L" para movimentos de cavalo.
  */
-function buildChessArrowPathData(fromCell, toCell) {
-    const start = logicalCellToSvgCenter(fromCell);
-    const end = logicalCellToSvgCenter(toCell);
+function buildChessArrowPathData(fromCell, toCell, flipped = false) {
+    const start = cellToSvgCenter(fromCell, flipped);
+    const end = cellToSvgCenter(toCell, flipped);
 
-    const shaftHalf = 10.5;   // meia largura do corpo (total 21px no viewBox 800)
-    const headHalf = 25;      // meia largura das asas da ponta (total 50px)
-    const headLength = 38;    // comprimento da ponta triangular
-    const startMargin = 24;   // recuo no centro da casa de origem
-    const endMargin = 14;     // recuo no centro da casa de destino
+    const shaftHalf = 10.5;
+    const headHalf = 25;
+    const headLength = 38;
+    const startMargin = 24;
+    const endMargin = 14;
 
     if (!isKnightJump(fromCell, toCell)) {
         const dx = end.x - start.x;
@@ -218,30 +305,25 @@ function buildChessArrowPathData(fromCell, toCell) {
             .join(" ") + " Z";
     }
 
-    // Seta em "L" do cavalo: perna longa (2 casas) + dobra 90° + perna curta (1 casa)
     const dc = Math.abs(toCell.col - fromCell.col);
     const elbow = dc === 2
         ? { x: end.x, y: start.y }
         : { x: start.x, y: end.y };
 
-    // Vetor da primeira perna (start -> elbow)
     const d1x = elbow.x - start.x;
     const d1y = elbow.y - start.y;
     const len1 = Math.hypot(d1x, d1y);
     const u1x = d1x / len1;
     const u1y = d1y / len1;
 
-    // Vetor da segunda perna (elbow -> end)
     const d2x = end.x - elbow.x;
     const d2y = end.y - elbow.y;
     const len2 = Math.hypot(d2x, d2y);
     const u2x = d2x / len2;
     const u2y = d2y / len2;
 
-    // Produto vetorial indica se vira à esquerda (-1) ou direita (+1)
     const turn = Math.sign(u1x * u2y - u1y * u2x);
 
-    // Normal apontando para o lado interno da curva
     const inX = -u1y * turn;
     const inY = u1x * turn;
 
@@ -254,20 +336,17 @@ function buildChessArrowPathData(fromCell, toCell) {
     const neckX = tipX - u2x * headLength;
     const neckY = tipY - u2y * headLength;
 
-    // Canto externo e canto interno da dobra de 90°
     const outerCornerX = elbow.x + u1x * shaftHalf - inX * shaftHalf;
     const outerCornerY = elbow.y + u1y * shaftHalf - inY * shaftHalf;
 
     const innerCornerX = elbow.x - u1x * shaftHalf + inX * shaftHalf;
     const innerCornerY = elbow.y - u1y * shaftHalf + inY * shaftHalf;
 
-    // Normal perpendicular à segunda perna
     const p2x = -u2y;
     const p2y = u2x;
 
-    // Garante que o lado externo da ponta acompanhe o lado externo do cotovelo
-    const neckOuterX = neckX - inX * 0 + (turn > 0 ? p2x : -p2x) * -shaftHalf;
-    const neckOuterY = neckY - inY * 0 + (turn > 0 ? p2y : -p2y) * -shaftHalf;
+    const neckOuterX = neckX + (turn > 0 ? p2x : -p2x) * -shaftHalf;
+    const neckOuterY = neckY + (turn > 0 ? p2y : -p2y) * -shaftHalf;
 
     const headOuterX = neckX + (turn > 0 ? p2x : -p2x) * -headHalf;
     const headOuterY = neckY + (turn > 0 ? p2y : -p2y) * -headHalf;
@@ -295,14 +374,11 @@ function buildChessArrowPathData(fromCell, toCell) {
         .join(" ") + " Z";
 }
 
-function createSvgArrowPath(fromCell, toCell, isPreview = false) {
-    const d = buildChessArrowPathData(fromCell, toCell);
+function createSvgArrowPath(fromCell, toCell, extraClass = "", flipped = false) {
+    const d = buildChessArrowPathData(fromCell, toCell, flipped);
     const pathEl = document.createElementNS(SVG_NS, "path");
     pathEl.setAttribute("d", d);
-    pathEl.setAttribute(
-        "class",
-        isPreview ? "chess-arrow-shape preview" : "chess-arrow-shape"
-    );
+    pathEl.setAttribute("class", extraClass || "chess-arrow-shape");
     return pathEl;
 }
 
@@ -314,7 +390,9 @@ function renderSavedArrows() {
     savedArrowsGroup.innerHTML = "";
     for (const arrow of drawnArrows) {
         if (!sameGridCell(arrow.from, arrow.to)) {
-            savedArrowsGroup.appendChild(createSvgArrowPath(arrow.from, arrow.to, false));
+            savedArrowsGroup.appendChild(
+                createSvgArrowPath(arrow.from, arrow.to, "chess-arrow-shape", isBoardFlipped())
+            );
         }
     }
 }
@@ -332,7 +410,7 @@ function renderPreviewArrow() {
         !sameGridCell(arrowStartCell, arrowHoverCell)
     ) {
         previewArrowGroup.appendChild(
-            createSvgArrowPath(arrowStartCell, arrowHoverCell, true)
+            createSvgArrowPath(arrowStartCell, arrowHoverCell, "chess-arrow-shape preview", isBoardFlipped())
         );
     }
 }
@@ -396,9 +474,9 @@ function isBoardFlipped() {
 }
 
 
-function getSquareName(visualRow, visualCol) {
-    const boardRow = isBoardFlipped() ? 7 - visualRow : visualRow;
-    const boardCol = isBoardFlipped() ? 7 - visualCol : visualCol;
+function getSquareName(visualRow, visualCol, flipped = isBoardFlipped()) {
+    const boardRow = flipped ? 7 - visualRow : visualRow;
+    const boardCol = flipped ? 7 - visualCol : visualCol;
 
     return "abcdefgh"[boardCol] + (8 - boardRow);
 }
@@ -439,9 +517,9 @@ function getSquareAtPoint(x, y) {
 }
 
 
-function getBaseSquareColor(visualRow, visualCol) {
-    const boardRow = isBoardFlipped() ? 7 - visualRow : visualRow;
-    const boardCol = isBoardFlipped() ? 7 - visualCol : visualCol;
+function getBaseSquareColor(visualRow, visualCol, flipped = isBoardFlipped()) {
+    const boardRow = flipped ? 7 - visualRow : visualRow;
+    const boardCol = flipped ? 7 - visualCol : visualCol;
     const theme = BOARD_THEMES[currentBoardTheme] || BOARD_THEMES.default;
 
     return (boardRow + boardCol) % 2 === 0
@@ -1100,6 +1178,525 @@ function renderBoard() {
 
 
 // --------------------------------------------------
+// ANÁLISE DE PARTIDA (AVALIAÇÃO, MELHOR LANCE E CLASSIFICAÇÕES)
+// --------------------------------------------------
+
+function evaluateMaterialBalance(pieces = {}) {
+    let score = 0;
+    for (const piece of Object.values(pieces)) {
+        if (!piece) continue;
+        const val = PIECE_VALUES[piece.type] || 0;
+        score += piece.color === "white" ? val : -val;
+    }
+    return Number(score.toFixed(1));
+}
+
+function estimateBestMoveForState(state) {
+    if (!state || !Array.isArray(state.legal_moves) || state.legal_moves.length === 0) {
+        return null;
+    }
+
+    const turn = state.turn;
+    const isWhite = turn === "white";
+    let bestMove = null;
+    let bestScore = isWhite ? -Infinity : Infinity;
+
+    for (const uci of state.legal_moves) {
+        const from = uci.slice(0, 2);
+        const to = uci.slice(2, 4);
+        const movingPiece = state.pieces?.[from];
+        const targetPiece = state.pieces?.[to];
+
+        let delta = 0;
+        if (targetPiece) {
+            const capVal = PIECE_VALUES[targetPiece.type] || 0;
+            delta += isWhite ? capVal : -capVal;
+        }
+
+        // Leve bônus posicional para centro do tabuleiro
+        const centerFiles = ["d", "e"];
+        const centerRanks = ["4", "5"];
+        if (centerFiles.includes(to[0]) && centerRanks.includes(to[1])) {
+            delta += isWhite ? 0.3 : -0.3;
+        }
+
+        // Penaliza expor peça valiosa se casa de destino for central/avançada sem defesa explícita
+        if (movingPiece && PIECE_VALUES[movingPiece.type] >= 3) {
+            delta += isWhite ? 0.15 : -0.15;
+        }
+
+        const score = evaluateMaterialBalance(state.pieces || {}) + delta;
+        if (isWhite ? score > bestScore : score < bestScore) {
+            bestScore = score;
+            bestMove = { from, to, uci };
+        }
+    }
+
+    return bestMove;
+}
+
+function classifyMoveDelta(ply, moverColor, evalBefore, evalAfter, playedMove, bestMove) {
+    if (ply <= 6) {
+        return "book";
+    }
+
+    const signedLoss = moverColor === "white"
+        ? evalBefore - evalAfter
+        : evalAfter - evalBefore;
+
+    const isBest = Boolean(
+        bestMove &&
+        playedMove &&
+        bestMove.from === playedMove.from &&
+        bestMove.to === playedMove.to
+    );
+
+    if (signedLoss >= 2.2) return "blunder";
+    if (signedLoss >= 1.1) return "mistake";
+    if (signedLoss >= 0.55) return "inaccuracy";
+    if (isBest && signedLoss <= 0.1 && Math.abs(evalAfter) >= 1.2) return "brilliant";
+    if (isBest || signedLoss <= 0.05) return "great";
+    return "good";
+}
+
+function buildAnalysisReport(game) {
+    const timeline = Array.isArray(game?.timeline) ? game.timeline : [];
+    const summary = {
+        white: { brilliant: 0, great: 0, good: 0, book: 0, inaccuracy: 0, mistake: 0, blunder: 0 },
+        black: { brilliant: 0, great: 0, good: 0, book: 0, inaccuracy: 0, mistake: 0, blunder: 0 }
+    };
+
+    if (!timeline.length) {
+        return { perPly: [], summary };
+    }
+
+    const evals = timeline.map(st => {
+        if (st.checkmate) {
+            return st.turn === "white" ? -99 : 99;
+        }
+        return evaluateMaterialBalance(st.pieces || {});
+    });
+
+    const perPly = timeline.map((st, idx) => {
+        const bestMove = estimateBestMoveForState(st);
+        const nextState = timeline[idx + 1] || null;
+        const playedMove = nextState?.last_move || null;
+
+        let classification = null;
+        let moverColor = null;
+
+        if (idx > 0 && st.last_move) {
+            moverColor = st.turn === "white" ? "black" : "white";
+            const prevBest = estimateBestMoveForState(timeline[idx - 1]);
+            classification = classifyMoveDelta(
+                idx,
+                moverColor,
+                evals[idx - 1],
+                evals[idx],
+                st.last_move,
+                prevBest
+            );
+
+            if (summary[moverColor] && MOVE_CLASSIFICATIONS[classification]) {
+                summary[moverColor][classification] += 1;
+            }
+        }
+
+        return {
+            ply: idx,
+            evalScore: evals[idx],
+            bestMove,
+            playedMove,
+            classification,
+            moverColor
+        };
+    });
+
+    return { perPly, summary };
+}
+
+function formatEvalText(score) {
+    if (Math.abs(score) >= 90) {
+        return score > 0 ? "+M" : "-M";
+    }
+    if (score > 0) return `+${score.toFixed(1)}`;
+    if (score < 0) return score.toFixed(1);
+    return "0.0";
+}
+
+function renderEvalBar(score) {
+    if (!analysisEvalBlackEl || !analysisEvalWhiteEl || !analysisEvalScoreEl) {
+        return;
+    }
+
+    // Mapeia vantagem [-10..+10] para porcentagem das Brancas [5%..95%]
+    const clamped = Math.max(-10, Math.min(10, score));
+    const whitePct = 50 + (clamped / 10) * 45;
+    const blackPct = 100 - whitePct;
+
+    analysisEvalWhiteEl.style.height = `${whitePct.toFixed(1)}%`;
+    analysisEvalBlackEl.style.height = `${blackPct.toFixed(1)}%`;
+    analysisEvalScoreEl.textContent = formatEvalText(score);
+}
+
+function renderAnalysisClassificationSummary() {
+    if (!analysisClassSummaryEl) {
+        return;
+    }
+
+    const order = ["brilliant", "great", "good", "book", "inaccuracy", "mistake", "blunder"];
+    const wSum = analysisReport?.summary?.white || {};
+    const bSum = analysisReport?.summary?.black || {};
+
+    analysisClassSummaryEl.innerHTML = "";
+    for (const key of order) {
+        const meta = MOVE_CLASSIFICATIONS[key];
+        const wVal = wSum[key] || 0;
+        const bVal = bSum[key] || 0;
+
+        const row = document.createElement("div");
+        row.className = "analysis-class-row";
+
+        const labelWrap = document.createElement("span");
+        labelWrap.className = "analysis-class-label";
+
+        const badge = document.createElement("span");
+        badge.className = `analysis-mini-badge ${key}`;
+        badge.textContent = meta.symbol;
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = meta.label;
+
+        labelWrap.appendChild(badge);
+        labelWrap.appendChild(textSpan);
+
+        const wCount = document.createElement("span");
+        wCount.className = `analysis-class-count ${wVal > 0 ? "has-val" : ""}`;
+        wCount.textContent = String(wVal);
+
+        const bCount = document.createElement("span");
+        bCount.className = `analysis-class-count ${key === "blunder" && bVal > 0 ? "blunder-val" : (bVal > 0 ? "has-val" : "")}`;
+        bCount.textContent = String(bVal);
+
+        row.appendChild(labelWrap);
+        row.appendChild(wCount);
+        row.appendChild(bCount);
+        analysisClassSummaryEl.appendChild(row);
+    }
+}
+
+function getAnalysisMaxPly() {
+    if (!analysisGame || !Array.isArray(analysisGame.timeline) || analysisGame.timeline.length === 0) {
+        return 0;
+    }
+    return analysisGame.timeline.length - 1;
+}
+
+function getAnalysisStateAtPly(ply) {
+    if (!analysisGame) {
+        return null;
+    }
+    if (Array.isArray(analysisGame.timeline) && analysisGame.timeline[ply]) {
+        return analysisGame.timeline[ply];
+    }
+    return {
+        pieces: analysisGame.finalPieces || {},
+        turn: "white",
+        last_move: null,
+        check_square: null,
+        winning_king: null,
+        losing_king: null,
+        checkmate: false
+    };
+}
+
+function renderAnalysisArrowsAndBadges(plyInfo) {
+    if (analysisBestArrowGroup) analysisBestArrowGroup.innerHTML = "";
+    if (analysisPlayedArrowGroup) analysisPlayedArrowGroup.innerHTML = "";
+    if (analysisSavedArrowsGroup) analysisSavedArrowsGroup.innerHTML = "";
+    if (analysisPreviewArrowGroup) analysisPreviewArrowGroup.innerHTML = "";
+    if (analysisBadgesLayer) analysisBadgesLayer.innerHTML = "";
+
+    if (!plyInfo) {
+        return;
+    }
+
+    // 1. Seta do melhor lance sugerido (verde)
+    if (analysisBestArrowGroup && plyInfo.bestMove) {
+        const fromCell = squareToCell(plyInfo.bestMove.from, analysisFlipped);
+        const toCell = squareToCell(plyInfo.bestMove.to, analysisFlipped);
+        if (fromCell && toCell && !sameGridCell(fromCell, toCell)) {
+            analysisBestArrowGroup.appendChild(
+                createSvgArrowPath(fromCell, toCell, "analysis-best-arrow", analysisFlipped)
+            );
+        }
+    }
+
+    // 2. Seta do lance que foi jogado nesse ply (âmbar) + badge de classificação
+    const state = getAnalysisStateAtPly(analysisPly);
+    if (state?.last_move) {
+        const fromCell = squareToCell(state.last_move.from, analysisFlipped);
+        const toCell = squareToCell(state.last_move.to, analysisFlipped);
+
+        if (analysisPlayedArrowGroup && fromCell && toCell && !sameGridCell(fromCell, toCell)) {
+            analysisPlayedArrowGroup.appendChild(
+                createSvgArrowPath(fromCell, toCell, "analysis-played-arrow", analysisFlipped)
+            );
+        }
+
+        if (analysisBadgesLayer && plyInfo.classification && MOVE_CLASSIFICATIONS[plyInfo.classification] && toCell) {
+            const meta = MOVE_CLASSIFICATIONS[plyInfo.classification];
+            const visualCol = analysisFlipped ? 7 - toCell.col : toCell.col;
+            const visualRow = analysisFlipped ? 7 - toCell.row : toCell.row;
+
+            const badge = document.createElement("span");
+            badge.className = `move-class-badge ${meta.key}`;
+            badge.textContent = meta.symbol;
+            badge.style.left = `${((visualCol + 0.82) / 8) * 100}%`;
+            badge.style.top = `${((visualRow + 0.22) / 8) * 100}%`;
+            analysisBadgesLayer.appendChild(badge);
+        }
+    }
+
+    // 3. Setas manuais feitas com botão direito na análise
+    if (analysisSavedArrowsGroup) {
+        for (const arrow of analysisCustomArrows) {
+            if (!sameGridCell(arrow.from, arrow.to)) {
+                analysisSavedArrowsGroup.appendChild(
+                    createSvgArrowPath(arrow.from, arrow.to, "chess-arrow-shape", analysisFlipped)
+                );
+            }
+        }
+    }
+
+    if (
+        analysisPreviewArrowGroup &&
+        isAnalysisRightDrawing &&
+        analysisArrowStart &&
+        analysisArrowHover &&
+        !sameGridCell(analysisArrowStart, analysisArrowHover)
+    ) {
+        analysisPreviewArrowGroup.appendChild(
+            createSvgArrowPath(analysisArrowStart, analysisArrowHover, "chess-arrow-shape preview", analysisFlipped)
+        );
+    }
+}
+
+function renderAnalysisMoves() {
+    if (!analysisMovesBody) {
+        return;
+    }
+
+    analysisMovesBody.innerHTML = "";
+    const history = analysisGame?.history || [];
+    const perPly = analysisReport?.perPly || [];
+
+    if (!history.length) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 3;
+        cell.className = "empty-history";
+        cell.textContent = "Nenhuma jogada registrada nesta partida.";
+        row.appendChild(cell);
+        analysisMovesBody.appendChild(row);
+        return;
+    }
+
+    history.forEach(move => {
+        const row = document.createElement("tr");
+        const numTd = document.createElement("td");
+        const whiteTd = document.createElement("td");
+        const blackTd = document.createElement("td");
+
+        numTd.textContent = `${move.number}.`;
+
+        const whitePly = (move.number - 1) * 2 + 1;
+        const blackPly = whitePly + 1;
+
+        if (move.white) {
+            whiteTd.dataset.analysisPly = whitePly;
+            const wInfo = perPly[whitePly];
+            const wMeta = wInfo?.classification ? MOVE_CLASSIFICATIONS[wInfo.classification] : null;
+            whiteTd.innerHTML = wMeta
+                ? `<span class="analysis-move-cell">${move.white} <span class="analysis-mini-badge ${wMeta.key}">${wMeta.symbol}</span></span>`
+                : move.white;
+
+            if (analysisPly === whitePly) {
+                whiteTd.classList.add("history-move-current");
+            }
+        } else {
+            whiteTd.textContent = "—";
+        }
+
+        if (move.black) {
+            blackTd.dataset.analysisPly = blackPly;
+            const bInfo = perPly[blackPly];
+            const bMeta = bInfo?.classification ? MOVE_CLASSIFICATIONS[bInfo.classification] : null;
+            blackTd.innerHTML = bMeta
+                ? `<span class="analysis-move-cell">${move.black} <span class="analysis-mini-badge ${bMeta.key}">${bMeta.symbol}</span></span>`
+                : move.black;
+
+            if (analysisPly === blackPly) {
+                blackTd.classList.add("history-move-current");
+            }
+        } else {
+            blackTd.textContent = "—";
+        }
+
+        row.appendChild(numTd);
+        row.appendChild(whiteTd);
+        row.appendChild(blackTd);
+        analysisMovesBody.appendChild(row);
+    });
+}
+
+function renderAnalysisView() {
+    if (!analysisBoardElement) {
+        return;
+    }
+
+    if (analysisRankCoordsElement) {
+        const ranks = analysisFlipped
+            ? ["1", "2", "3", "4", "5", "6", "7", "8"]
+            : ["8", "7", "6", "5", "4", "3", "2", "1"];
+        analysisRankCoordsElement.innerHTML = ranks.map(r => `<span>${r}</span>`).join("");
+    }
+
+    if (analysisFileCoordsElement) {
+        const files = analysisFlipped
+            ? ["h", "g", "f", "e", "d", "c", "b", "a"]
+            : ["a", "b", "c", "d", "e", "f", "g", "h"];
+        analysisFileCoordsElement.innerHTML = files.map(f => `<span>${f}</span>`).join("");
+    }
+
+    const maxPly = getAnalysisMaxPly();
+    const state = getAnalysisStateAtPly(analysisPly);
+    const plyInfo = analysisReport?.perPly?.[analysisPly] || null;
+
+    if (analysisGameBadge) {
+        analysisGameBadge.textContent = analysisGame ? `#${analysisGame.id}` : "—";
+    }
+
+    if (analysisMetaInline) {
+        analysisMetaInline.textContent = analysisGame ? `${analysisPly} / ${maxPly}` : "0 / 0";
+    }
+
+    renderEvalBar(plyInfo ? plyInfo.evalScore : 0);
+    renderAnalysisClassificationSummary();
+
+    if (analysisPlyLabel) {
+        if (!analysisGame) {
+            analysisPlyLabel.textContent = "Selecione uma partida no histórico para revisar.";
+        } else if (analysisPly === 0) {
+            analysisPlyLabel.textContent = `Posição inicial · ${analysisGame.mode}`;
+        } else {
+            const moveNum = Math.ceil(analysisPly / 2);
+            const sideText = analysisPly % 2 === 1 ? "Brancas" : "Pretas";
+            const classMeta = plyInfo?.classification ? MOVE_CLASSIFICATIONS[plyInfo.classification] : null;
+            analysisPlyLabel.textContent = classMeta
+                ? `Lance ${moveNum} (${sideText}) · ${classMeta.label} (${classMeta.symbol})`
+                : `Lance ${moveNum} (${sideText})`;
+        }
+    }
+
+    if (analysisMoveFeedback) {
+        if (!analysisGame) {
+            analysisMoveFeedback.textContent = "";
+        } else if (plyInfo?.classification && MOVE_CLASSIFICATIONS[plyInfo.classification]) {
+            const bestText = plyInfo.bestMove
+                ? `Melhor sugerido: ${plyInfo.bestMove.from}→${plyInfo.bestMove.to}`
+                : "";
+            analysisMoveFeedback.textContent = `${MOVE_CLASSIFICATIONS[plyInfo.classification].desc} ${bestText}`.trim();
+        } else if (plyInfo?.bestMove) {
+            analysisMoveFeedback.textContent = `Melhor lance sugerido: ${plyInfo.bestMove.from}→${plyInfo.bestMove.to}`;
+        } else {
+            analysisMoveFeedback.textContent = analysisGame.resultLabel || "";
+        }
+    }
+
+    if (analysisBtnStart) analysisBtnStart.disabled = !analysisGame || analysisPly <= 0;
+    if (analysisBtnPrev) analysisBtnPrev.disabled = !analysisGame || analysisPly <= 0;
+    if (analysisBtnNext) analysisBtnNext.disabled = !analysisGame || analysisPly >= maxPly;
+    if (analysisBtnEnd) analysisBtnEnd.disabled = !analysisGame || analysisPly >= maxPly;
+
+    analysisBoardElement.innerHTML = "";
+    if (!state) {
+        renderAnalysisMoves();
+        renderAnalysisArrowsAndBadges(null);
+        return;
+    }
+
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const squareName = getSquareName(row, col, analysisFlipped);
+            const square = document.createElement("div");
+            let color = [...getBaseSquareColor(row, col, analysisFlipped)];
+
+            square.className = "square";
+            square.dataset.square = squareName;
+
+            if (
+                state.last_move &&
+                (state.last_move.from === squareName || state.last_move.to === squareName)
+            ) {
+                color = blendColor(color, [255, 220, 80], 0.33);
+            }
+
+            if (state.check_square === squareName) {
+                color = blendColor(color, [220, 40, 40], 0.50);
+            }
+
+            if (state.winning_king === squareName) {
+                color = blendColor(color, [40, 190, 80], 0.58);
+            }
+
+            square.style.backgroundColor = `rgb(${color.join(", ")})`;
+
+            const piece = state.pieces?.[squareName];
+            if (piece) {
+                const img = document.createElement("img");
+                img.src = getPieceImage(piece);
+                img.alt = pieceNames[piece.type] || "Peça";
+                img.className = "piece";
+                img.draggable = false;
+                square.appendChild(img);
+            }
+
+            analysisBoardElement.appendChild(square);
+        }
+    }
+
+    renderAnalysisMoves();
+    renderAnalysisArrowsAndBadges(plyInfo);
+}
+
+function setAnalysisPly(targetPly) {
+    if (!analysisGame) {
+        return;
+    }
+    const maxPly = getAnalysisMaxPly();
+    analysisPly = Math.max(0, Math.min(targetPly, maxPly));
+    renderAnalysisView();
+}
+
+function openGameInAnalysis(game) {
+    if (!game) {
+        return;
+    }
+    analysisGame = game;
+    analysisReport = buildAnalysisReport(game);
+    analysisPly = Array.isArray(game.timeline) && game.timeline.length > 0
+        ? game.timeline.length - 1
+        : 0;
+    analysisCustomArrows.length = 0;
+    isAnalysisRightDrawing = false;
+    analysisArrowStart = null;
+    analysisArrowHover = null;
+    switchFeatureTab("analysis");
+}
+
+
+// --------------------------------------------------
 // PEÇAS FLUTUANTES
 // --------------------------------------------------
 
@@ -1469,6 +2066,11 @@ function goToNewGameSetup() {
         playTabButton.disabled = true;
     }
 
+    const mobilePlayTab = document.getElementById("mobile-tab-play");
+    if (mobilePlayTab) {
+        mobilePlayTab.disabled = true;
+    }
+
     if (newGameAfterEndButton) {
         newGameAfterEndButton.hidden = true;
     }
@@ -1648,6 +2250,11 @@ async function startConfiguredGame() {
 
         if (playTabButton) {
             playTabButton.disabled = false;
+        }
+
+        const mobilePlayTab = document.getElementById("mobile-tab-play");
+        if (mobilePlayTab) {
+            mobilePlayTab.disabled = false;
         }
 
         if (newGameAfterEndButton) {
@@ -2186,7 +2793,6 @@ boardElement.addEventListener("contextmenu", event => {
 });
 
 boardElement.addEventListener("pointerdown", event => {
-    // Botão direito: inicia desenho de seta (funciona até no modo visualização ou turno do bot)
     if (event.button === 2) {
         event.preventDefault();
         const cell = getLogicalCellFromClientPoint(event.clientX, event.clientY);
@@ -2200,7 +2806,6 @@ boardElement.addEventListener("pointerdown", event => {
         return;
     }
 
-    // Botão esquerdo: limpa setas desenhadas
     if (event.button === 0) {
         clearDrawnArrows();
     }
@@ -2233,10 +2838,54 @@ boardElement.addEventListener("pointerdown", event => {
 });
 
 
+// Eventos do tabuleiro na aba Análise de partida
+if (analysisBoardElement) {
+    analysisBoardElement.addEventListener("contextmenu", event => {
+        event.preventDefault();
+    });
+
+    analysisBoardElement.addEventListener("pointerdown", event => {
+        if (event.button === 2) {
+            event.preventDefault();
+            const cell = getLogicalCellFromPointForElement(
+                event.clientX,
+                event.clientY,
+                analysisBoardElement,
+                analysisFlipped
+            );
+            if (!cell) {
+                return;
+            }
+            isAnalysisRightDrawing = true;
+            analysisArrowStart = cell;
+            analysisArrowHover = cell;
+            renderAnalysisArrowsAndBadges(analysisReport?.perPly?.[analysisPly] || null);
+            return;
+        }
+
+        if (event.button === 0 && analysisCustomArrows.length > 0) {
+            analysisCustomArrows.length = 0;
+            renderAnalysisArrowsAndBadges(analysisReport?.perPly?.[analysisPly] || null);
+        }
+    });
+}
+
+
 document.addEventListener("pointermove", event => {
     if (isRightDrawing) {
         arrowHoverCell = getLogicalCellFromClientPoint(event.clientX, event.clientY);
         renderPreviewArrow();
+        return;
+    }
+
+    if (isAnalysisRightDrawing) {
+        analysisArrowHover = getLogicalCellFromPointForElement(
+            event.clientX,
+            event.clientY,
+            analysisBoardElement,
+            analysisFlipped
+        );
+        renderAnalysisArrowsAndBadges(analysisReport?.perPly?.[analysisPly] || null);
         return;
     }
 
@@ -2251,6 +2900,32 @@ document.addEventListener("pointermove", event => {
 
 
 document.addEventListener("pointerup", async event => {
+    if (event.button === 2 && isAnalysisRightDrawing) {
+        const endCell =
+            getLogicalCellFromPointForElement(
+                event.clientX,
+                event.clientY,
+                analysisBoardElement,
+                analysisFlipped
+            ) || analysisArrowHover;
+
+        isAnalysisRightDrawing = false;
+        if (analysisArrowStart && endCell && !sameGridCell(analysisArrowStart, endCell)) {
+            const idx = analysisCustomArrows.findIndex(
+                item => sameGridCell(item.from, analysisArrowStart) && sameGridCell(item.to, endCell)
+            );
+            if (idx >= 0) {
+                analysisCustomArrows.splice(idx, 1);
+            } else {
+                analysisCustomArrows.push({ from: analysisArrowStart, to: endCell });
+            }
+        }
+        analysisArrowStart = null;
+        analysisArrowHover = null;
+        renderAnalysisArrowsAndBadges(analysisReport?.perPly?.[analysisPly] || null);
+        return;
+    }
+
     if (event.button === 2) {
         if (!isRightDrawing) {
             return;
@@ -2356,7 +3031,7 @@ document.addEventListener("pointerup", async event => {
 
 
 // --------------------------------------------------
-// CLIQUES NO HISTÓRICO DA PARTIDA ATUAL
+// CLIQUES NO HISTÓRICO DA PARTIDA ATUAL E DA ANÁLISE
 // --------------------------------------------------
 
 historyBody.addEventListener("click", event => {
@@ -2376,9 +3051,22 @@ historyBody.addEventListener("click", event => {
     }
 });
 
+if (analysisMovesBody) {
+    analysisMovesBody.addEventListener("click", event => {
+        const cell = event.target.closest("td[data-analysis-ply]");
+        if (!cell || !analysisGame) {
+            return;
+        }
+        const ply = Number(cell.dataset.analysisPly);
+        if (Number.isInteger(ply)) {
+            setAnalysisPly(ply);
+        }
+    });
+}
+
 
 // --------------------------------------------------
-// BOTÕES DA PARTIDA E DO HISTÓRICO DE PARTIDAS
+// BOTÕES DA PARTIDA, ANÁLISE E HISTÓRICO DE PARTIDAS
 // --------------------------------------------------
 
 undoButton.addEventListener("click", undoMove);
@@ -2390,6 +3078,20 @@ if (newGameAfterEndButton) {
 
 prevButton.addEventListener("click", previousPosition);
 nextButton.addEventListener("click", nextPosition);
+
+if (analysisBtnStart) analysisBtnStart.addEventListener("click", () => setAnalysisPly(0));
+if (analysisBtnPrev) analysisBtnPrev.addEventListener("click", () => setAnalysisPly(analysisPly - 1));
+if (analysisBtnNext) analysisBtnNext.addEventListener("click", () => setAnalysisPly(analysisPly + 1));
+if (analysisBtnEnd) analysisBtnEnd.addEventListener("click", () => setAnalysisPly(getAnalysisMaxPly()));
+if (analysisBtnFlip) {
+    analysisBtnFlip.addEventListener("click", () => {
+        analysisFlipped = !analysisFlipped;
+        renderAnalysisView();
+    });
+}
+if (analysisBtnBackGames) {
+    analysisBtnBackGames.addEventListener("click", () => switchFeatureTab("games"));
+}
 
 if (gamesSearchInput) {
     gamesSearchInput.addEventListener("input", event => {
@@ -2416,7 +3118,12 @@ if (btnDeleteSavedGame) {
 
 if (btnInspectAnalysis) {
     btnInspectAnalysis.addEventListener("click", () => {
-        showToast("A aba Análise de partida será implementada na próxima etapa.");
+        const selectedGame = savedGames.find(game => game.id === selectedSavedGameId);
+        if (!selectedGame) {
+            showToast("Selecione uma partida para revisar.");
+            return;
+        }
+        openGameInAnalysis(selectedGame);
     });
 }
 
@@ -2433,6 +3140,7 @@ function switchFeatureTab(feature) {
 
     const viewMap = {
         play: document.getElementById("view-play"),
+        analysis: document.getElementById("view-analysis"),
         games: document.getElementById("view-games"),
         settings: document.getElementById("view-settings")
     };
@@ -2441,12 +3149,12 @@ function switchFeatureTab(feature) {
         play: activeConfig?.mode === "bot"
             ? `Partida contra o Bot (Nível ${activeConfig.botLevel})`
             : "Partida individual de xadrez",
+        analysis: "Revisão e análise lance a lance",
         games: "Registro e revisão de partidas concluídas",
         settings: "Configuração de partida"
     };
 
     if (!viewMap[feature]) {
-        showToast("Análise de partida será implementada na próxima etapa.");
         return;
     }
 
@@ -2469,6 +3177,12 @@ function switchFeatureTab(feature) {
 
     if (feature === "games") {
         loadSavedGames();
+    } else if (feature === "analysis") {
+        if (!analysisGame && savedGames.length > 0) {
+            openGameInAnalysis(savedGames[0]);
+            return;
+        }
+        renderAnalysisView();
     } else if (feature === "play" && gameState) {
         renderBoard();
     } else if (feature === "settings") {
@@ -2504,6 +3218,9 @@ document.addEventListener("click", event => {
 
     if (gameState) {
         renderBoard();
+    }
+    if (analysisGame && !document.getElementById("view-analysis")?.hidden) {
+        renderAnalysisView();
     }
 });
 

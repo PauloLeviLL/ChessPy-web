@@ -12,9 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/static/css/style.css?v=5">
+    <link rel="stylesheet" href="/static/css/style.css?v=6">
 
-    <script src="/static/js/board.js?v=5" defer></script>
+    <script src="/static/js/board.js?v=6" defer></script>
 </head>
 
 <body>
@@ -42,15 +42,15 @@
                             Partida
                         </button>
 
-                        <button class="tab-button" type="button" data-feature="analysis">
+                        <button class="tab-button" type="button" data-feature="analysis" id="tab-analysis">
                             Análise de partida
                         </button>
 
-                        <button class="tab-button" type="button" data-feature="games">
+                        <button class="tab-button" type="button" data-feature="games" id="tab-games">
                             Histórico de partidas
                         </button>
 
-                        <button class="tab-button active" type="button" data-feature="settings">
+                        <button class="tab-button active" type="button" data-feature="settings" id="tab-settings">
                             Configuração de partida
                         </button>
 
@@ -73,6 +73,22 @@
                 </div>
 
             </header>
+
+            <!-- Barra de navegação rápida visível no mobile -->
+            <nav class="mobile-feature-nav" aria-label="Navegação mobile">
+                <button type="button" class="mobile-nav-btn" data-feature="play" id="mobile-tab-play" disabled>
+                    Partida
+                </button>
+                <button type="button" class="mobile-nav-btn" data-feature="analysis" id="mobile-tab-analysis">
+                    Análise
+                </button>
+                <button type="button" class="mobile-nav-btn" data-feature="games" id="mobile-tab-games">
+                    Histórico
+                </button>
+                <button type="button" class="mobile-nav-btn active" data-feature="settings" id="mobile-tab-settings">
+                    Config.
+                </button>
+            </nav>
 
 
             <!-- ==========================================
@@ -328,7 +344,169 @@
 
 
             <!-- ==========================================
-                 VIEW 2: HISTÓRICO DE PARTIDAS
+                 VIEW 2: ANÁLISE DE PARTIDA (ESTILO CHESS.COM)
+                 ========================================== -->
+            <div id="view-analysis" class="feature-view" hidden>
+
+                <div class="analysis-layout">
+
+                    <section class="board-section">
+
+                        <div class="analysis-board-stage">
+
+                            <!-- Barra vertical de avaliação (Eval Bar) -->
+                            <div class="eval-bar-column" aria-label="Avaliação da posição">
+                                <div class="eval-bar-track" id="analysis-eval-track">
+                                    <div class="eval-bar-black" id="analysis-eval-black"></div>
+                                    <div class="eval-bar-white" id="analysis-eval-white"></div>
+                                    <div class="eval-zero-line"></div>
+                                    <span class="eval-score-tag" id="analysis-eval-score">0.0</span>
+                                </div>
+                            </div>
+
+                            <div class="board-frame analysis-board-frame">
+
+                                <div class="board-with-coordinates">
+
+                                    <div class="rank-coordinates" id="analysis-rank-coordinates">
+                                        <span>8</span>
+                                        <span>7</span>
+                                        <span>6</span>
+                                        <span>5</span>
+                                        <span>4</span>
+                                        <span>3</span>
+                                        <span>2</span>
+                                        <span>1</span>
+                                    </div>
+
+                                    <div class="board-wrapper" id="analysis-board-wrapper">
+                                        <div
+                                            id="analysis-board"
+                                            class="board"
+                                            aria-label="Tabuleiro de análise da partida"
+                                        ></div>
+
+                                        <svg
+                                            id="analysis-arrows-layer"
+                                            class="arrows-overlay"
+                                            viewBox="0 0 800 800"
+                                            aria-hidden="true"
+                                        >
+                                            <g id="analysis-best-arrow-group"></g>
+                                            <g id="analysis-played-arrow-group"></g>
+                                            <g id="analysis-saved-arrows-group"></g>
+                                            <g id="analysis-preview-arrow-group"></g>
+                                        </svg>
+
+                                        <div
+                                            id="analysis-badges-layer"
+                                            class="analysis-badges-layer"
+                                            aria-hidden="true"
+                                        ></div>
+                                    </div>
+
+                                    <div class="file-coordinates" id="analysis-file-coordinates">
+                                        <span>a</span>
+                                        <span>b</span>
+                                        <span>c</span>
+                                        <span>d</span>
+                                        <span>e</span>
+                                        <span>f</span>
+                                        <span>g</span>
+                                        <span>h</span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="analysis-controls-bar">
+                            <div class="analysis-status-group">
+                                <span id="analysis-ply-label" class="game-status">
+                                    Selecione uma partida no histórico para revisar.
+                                </span>
+                                <span id="analysis-move-feedback" class="analysis-move-feedback"></span>
+                            </div>
+
+                            <div class="analysis-nav-buttons">
+                                <button type="button" class="icon-button" id="analysis-btn-start" title="Início da partida" disabled>|«</button>
+                                <button type="button" class="icon-button" id="analysis-btn-prev" title="Lance anterior" disabled>«</button>
+                                <button type="button" class="icon-button" id="analysis-btn-next" title="Próximo lance" disabled>»</button>
+                                <button type="button" class="icon-button" id="analysis-btn-end" title="Final da partida" disabled>»|</button>
+                            </div>
+                        </div>
+
+                        <div class="analysis-legend-bar">
+                            <span><i class="legend-dot best"></i> Melhor lance</span>
+                            <span><i class="legend-dot played"></i> Lance jogado</span>
+                            <span><i class="legend-dot custom"></i> Botão direito: anotar</span>
+                        </div>
+
+                    </section>
+
+                    <aside class="analysis-sidebar">
+
+                        <section class="wire-card analysis-summary-card">
+                            <div class="card-label">
+                                <span>Classificação dos lances</span>
+                                <span class="card-badge" id="analysis-game-badge">—</span>
+                            </div>
+
+                            <div class="analysis-class-header">
+                                <span>Tipo</span>
+                                <span class="col-center">B</span>
+                                <span class="col-center">P</span>
+                            </div>
+
+                            <div class="analysis-class-list" id="analysis-classification-summary"></div>
+                        </section>
+
+                        <section class="history-panel">
+                            <div class="history-header">
+                                <h2>Lances e avaliação</h2>
+                                <span class="analysis-meta-inline" id="analysis-meta-inline">0 / 0</span>
+                            </div>
+
+                            <div class="history-table-container analysis-moves-container">
+                                <table class="history-table analysis-moves-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Brancas</th>
+                                            <th>Pretas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="analysis-moves-body">
+                                        <tr>
+                                            <td colspan="3" class="empty-history">
+                                                Selecione uma partida no histórico para revisar.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <div class="analysis-sidebar-actions">
+                            <button type="button" class="secondary-wireframe-btn" id="btn-analysis-flip">
+                                Girar tabuleiro
+                            </button>
+                            <button type="button" class="secondary-wireframe-btn" id="btn-back-to-games">
+                                Histórico de partidas
+                            </button>
+                        </div>
+
+                    </aside>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==========================================
+                 VIEW 3: HISTÓRICO DE PARTIDAS
                  ========================================== -->
             <div id="view-games" class="feature-view" hidden>
 
@@ -467,7 +645,7 @@
 
 
             <!-- ==========================================
-                 VIEW 3: CONFIGURAÇÃO DE PARTIDA
+                 VIEW 4: CONFIGURAÇÃO DE PARTIDA
                  ========================================== -->
             <div id="view-settings" class="feature-view">
 
