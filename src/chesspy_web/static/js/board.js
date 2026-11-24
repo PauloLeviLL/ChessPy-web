@@ -173,7 +173,12 @@ function generateRecordId() {
 }
 
 
-function squareToCell(squareName, flipped = false) {
+/**
+ * Converte uma casa algébrica ("e4") para coordenadas lógicas do tabuleiro (0..7),
+ * sempre com a8 = { col: 0, row: 0 } e h1 = { col: 7, row: 7 }.
+ * A inversão visual (flipped) é aplicada exclusivamente na camada de renderização.
+ */
+function squareToCell(squareName) {
     if (!squareName || squareName.length < 2) {
         return null;
     }
@@ -183,8 +188,8 @@ function squareToCell(squareName, flipped = false) {
         return null;
     }
     return {
-        col: flipped ? 7 - boardCol : boardCol,
-        row: flipped ? 7 - boardRow : boardRow
+        col: boardCol,
+        row: boardRow
     };
 }
 
@@ -1328,7 +1333,6 @@ function renderEvalBar(score, customText = null) {
         return;
     }
 
-    // Mapeia vantagem [-10..+10] para porcentagem das Brancas [5%..95%]
     const clamped = Math.max(-10, Math.min(10, score));
     const whitePct = 50 + (clamped / 10) * 45;
     const blackPct = 100 - whitePct;
@@ -1416,14 +1420,10 @@ function renderAnalysisArrowsAndBadges(plyInfo) {
     if (analysisPreviewArrowGroup) analysisPreviewArrowGroup.innerHTML = "";
     if (analysisBadgesLayer) analysisBadgesLayer.innerHTML = "";
 
-    if (!plyInfo) {
-        return;
-    }
-
     // 1. Seta do melhor lance sugerido (verde)
-    if (analysisBestArrowGroup && plyInfo.bestMove) {
-        const fromCell = squareToCell(plyInfo.bestMove.from, analysisFlipped);
-        const toCell = squareToCell(plyInfo.bestMove.to, analysisFlipped);
+    if (plyInfo && analysisBestArrowGroup && plyInfo.bestMove) {
+        const fromCell = squareToCell(plyInfo.bestMove.from);
+        const toCell = squareToCell(plyInfo.bestMove.to);
         if (fromCell && toCell && !sameGridCell(fromCell, toCell)) {
             analysisBestArrowGroup.appendChild(
                 createSvgArrowPath(fromCell, toCell, "analysis-best-arrow", analysisFlipped)
@@ -1433,9 +1433,9 @@ function renderAnalysisArrowsAndBadges(plyInfo) {
 
     // 2. Seta do lance que foi jogado nesse ply (âmbar) + badge de classificação
     const state = getAnalysisStateAtPly(analysisPly);
-    if (state?.last_move) {
-        const fromCell = squareToCell(state.last_move.from, analysisFlipped);
-        const toCell = squareToCell(state.last_move.to, analysisFlipped);
+    if (plyInfo && state?.last_move) {
+        const fromCell = squareToCell(state.last_move.from);
+        const toCell = squareToCell(state.last_move.to);
 
         if (analysisPlayedArrowGroup && fromCell && toCell && !sameGridCell(fromCell, toCell)) {
             analysisPlayedArrowGroup.appendChild(
@@ -1443,7 +1443,12 @@ function renderAnalysisArrowsAndBadges(plyInfo) {
             );
         }
 
-        if (analysisBadgesLayer && plyInfo.classification && MOVE_CLASSIFICATIONS[plyInfo.classification] && toCell) {
+        if (
+            analysisBadgesLayer &&
+            plyInfo.classification &&
+            MOVE_CLASSIFICATIONS[plyInfo.classification] &&
+            toCell
+        ) {
             const meta = MOVE_CLASSIFICATIONS[plyInfo.classification];
             const visualCol = analysisFlipped ? 7 - toCell.col : toCell.col;
             const visualRow = analysisFlipped ? 7 - toCell.row : toCell.row;
@@ -1457,7 +1462,7 @@ function renderAnalysisArrowsAndBadges(plyInfo) {
         }
     }
 
-    // 3. Setas manuais feitas com botão direito na análise
+    // 3. Setas manuais feitas com botão direito na análise (já armazenadas em coordenadas lógicas)
     if (analysisSavedArrowsGroup) {
         for (const arrow of analysisCustomArrows) {
             if (!sameGridCell(arrow.from, arrow.to)) {
@@ -1676,6 +1681,55 @@ function setAnalysisPly(targetPly) {
     const maxPly = getAnalysisMaxPly();
     analysisPly = Math.max(0, Math.min(targetPly, maxPly));
     renderAnalysisView();
+}
+
+async function openGameInAnalysis(game) {
+    if (!game) {
+        return;
+    }
+
+    analysisGame = game;
+    analysisReport = buildAnalysisReport(game);
+    analysisPly = Array.isArray(game.timeline) && game.timeline.length > 0
+        ? game.timeline.length - 1
+        : 0;
+    analysisCustomArrows.length = 0;
+    isAnalysisRightDrawing = false;
+    analysisArrowStart = null;
+    analysisArrowHover = null;
+
+    switchFeatureTab("analysis");
+
+    if (!Array.isArray(game.history) || game.history.length === 0) {
+        return;
+    }
+
+    if (analysisMoveFeedback) {
+        analysisMoveFeedback.textContent = "Analisando partida com Stockfish...";
+    }
+
+    try {
+        const response = await fetch("/api/games/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ history: game.history })
+        });
+
+        if (!response.ok) {
+            renderAnalysisView();
+            return;
+        }
+
+        const stockfishReport = await response.json();
+        if (analysisGame?.id === game.id && Array.isArray(stockfishReport.perPly)) {
+            analysisReport = stockfishReport;
+            renderAnalysisView();
+            showToast("Análise do Stockfish concluída.");
+        }
+    } catch (error) {
+        console.warn("Stockfish indisponível, usando avaliação local:", error);
+        renderAnalysisView();
+    }
 }
 
 async function openGameInAnalysis(game) {
