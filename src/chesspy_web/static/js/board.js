@@ -55,6 +55,10 @@ const analysisMoveFeedback = document.getElementById("analysis-move-feedback");
 const analysisGameBadge = document.getElementById("analysis-game-badge");
 const analysisMetaInline = document.getElementById("analysis-meta-inline");
 const analysisClassSummaryEl = document.getElementById("analysis-classification-summary");
+const analysisAccWhiteEl = document.getElementById("analysis-acc-white");
+const analysisAccBlackEl = document.getElementById("analysis-acc-black");
+const analysisRatingWhiteEl = document.getElementById("analysis-rating-white");
+const analysisRatingBlackEl = document.getElementById("analysis-rating-black");
 const analysisMovesBody = document.getElementById("analysis-moves-body");
 
 const analysisBtnStart = document.getElementById("analysis-btn-start");
@@ -83,26 +87,73 @@ const PIECE_VALUES = {
 };
 
 const MOVE_CLASSIFICATIONS = {
-    brilliant:  { key: "brilliant",  symbol: "!!", label: "Brilhante",  desc: "Lance brilhante com recurso tático forte." },
-    great:      { key: "great",      symbol: "!",  label: "Excelente",  desc: "Mantém ou amplia a vantagem de forma precisa." },
-    good:       { key: "good",       symbol: "✓",  label: "Bom",        desc: "Lance sólido que sustenta a posição." },
-    book:       { key: "book",       symbol: "B",  label: "Livro",      desc: "Teoria de abertura conhecida." },
-    inaccuracy: { key: "inaccuracy", symbol: "?!", label: "Imprecisão", desc: "Perde um pouco de precisão na posição." },
-    mistake:    { key: "mistake",    symbol: "?",  label: "Erro",       desc: "Cede vantagem relevante ao adversário." },
-    blunder:    { key: "blunder",    symbol: "??", label: "Capivarada", desc: "Erro grave (blunder) que compromete a posição." }
+    brilliant: {
+        key: "brilliant",
+        symbol: "!!",
+        label: "Brilhante",
+        desc: "Sacrifício ou recurso tático brilhante que mantém ou amplia a vantagem."
+    },
+    great: {
+        key: "great",
+        symbol: "!",
+        label: "Grande Lance",
+        desc: "Lance crítico que encontra a continuação mais precisa."
+    },
+    best: {
+        key: "best",
+        symbol: "★",
+        label: "Melhor",
+        desc: "O lance escolhido pelo Stockfish como primeira opção."
+    },
+    excellent: {
+        key: "excellent",
+        symbol: "👍",
+        label: "Excelente",
+        desc: "Quase tão preciso quanto a melhor opção."
+    },
+    good: {
+        key: "good",
+        symbol: "✓",
+        label: "Bom",
+        desc: "Lance sólido, com pequena perda de pontos esperados."
+    },
+    book: {
+        key: "book",
+        symbol: "B",
+        label: "Livro",
+        desc: "Lance teórico conhecido de abertura."
+    },
+    inaccuracy: {
+        key: "inaccuracy",
+        symbol: "?!",
+        label: "Imprecisão",
+        desc: "Permite ao adversário melhorar a posição."
+    },
+    mistake: {
+        key: "mistake",
+        symbol: "?",
+        label: "Erro",
+        desc: "Cede vantagem relevante ao adversário."
+    },
+    blunder: {
+        key: "blunder",
+        symbol: "??",
+        label: "Capivarada",
+        desc: "Erro grave que compromete a partida."
+    }
 };
 
 const BOT_LEVELS = {
-    1:  { name: "Iniciante",     elo: "~600 ELO" },
-    2:  { name: "Novato",        elo: "~800 ELO" },
-    3:  { name: "Casual",        elo: "~1000 ELO" },
-    4:  { name: "Intermediário", elo: "~1200 ELO" },
-    5:  { name: "Clube",         elo: "~1400 ELO" },
-    6:  { name: "Tático",        elo: "~1600 ELO" },
-    7:  { name: "Avançado",      elo: "~1800 ELO" },
-    8:  { name: "Competitivo",   elo: "~2000 ELO" },
-    9:  { name: "Especialista",  elo: "~2200 ELO" },
-    10: { name: "Mestre",        elo: "~2400 ELO" }
+    1: { name: "Iniciante", elo: "~600 ELO" },
+    2: { name: "Novato", elo: "~800 ELO" },
+    3: { name: "Casual", elo: "~1000 ELO" },
+    4: { name: "Intermediário", elo: "~1200 ELO" },
+    5: { name: "Clube", elo: "~1400 ELO" },
+    6: { name: "Tático", elo: "~1600 ELO" },
+    7: { name: "Avançado", elo: "~1800 ELO" },
+    8: { name: "Competitivo", elo: "~2000 ELO" },
+    9: { name: "Especialista", elo: "~2200 ELO" },
+    10: { name: "Mestre", elo: "~2400 ELO" }
 };
 
 const ANIMATION_DURATION = 160;
@@ -305,9 +356,11 @@ function buildChessArrowPathData(fromCell, toCell, flipped = false) {
             [sx - px * shaftHalf, sy - py * shaftHalf]
         ];
 
-        return pts
-            .map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
-            .join(" ") + " Z";
+        return (
+            pts
+                .map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
+                .join(" ") + " Z"
+        );
     }
 
     const dc = Math.abs(toCell.col - fromCell.col);
@@ -374,9 +427,11 @@ function buildChessArrowPathData(fromCell, toCell, flipped = false) {
         [sx + inX * shaftHalf, sy + inY * shaftHalf]
     ];
 
-    return pts
-        .map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
-        .join(" ") + " Z";
+    return (
+        pts
+            .map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`)
+            .join(" ") + " Z"
+    );
 }
 
 function createSvgArrowPath(fromCell, toCell, extraClass = "", flipped = false) {
@@ -415,7 +470,12 @@ function renderPreviewArrow() {
         !sameGridCell(arrowStartCell, arrowHoverCell)
     ) {
         previewArrowGroup.appendChild(
-            createSvgArrowPath(arrowStartCell, arrowHoverCell, "chess-arrow-shape preview", isBoardFlipped())
+            createSvgArrowPath(
+                arrowStartCell,
+                arrowHoverCell,
+                "chess-arrow-shape preview",
+                isBoardFlipped()
+            )
         );
     }
 }
@@ -516,9 +576,7 @@ function getSquareCenter(squareName) {
 function getSquareAtPoint(x, y) {
     const element = document.elementFromPoint(x, y);
 
-    return element
-        ?.closest(".square")
-        ?.dataset.square || null;
+    return element?.closest(".square")?.dataset.square || null;
 }
 
 
@@ -535,9 +593,7 @@ function getBaseSquareColor(visualRow, visualCol, flipped = isBoardFlipped()) {
 
 function blendColor(base, overlay, alpha) {
     return base.map((channel, index) =>
-        Math.round(
-            channel * (1 - alpha) + overlay[index] * alpha
-        )
+        Math.round(channel * (1 - alpha) + overlay[index] * alpha)
     );
 }
 
@@ -637,9 +693,7 @@ function updateStatus() {
     }
 
     if (viewPly !== gameState.total_plies) {
-        statusElement.textContent =
-            `Visualizando posição após ${viewPly} jogada(s)`;
-
+        statusElement.textContent = `Visualizando posição após ${viewPly} jogada(s)`;
         checkWarningElement.textContent = "MODO DE VISUALIZAÇÃO";
         return;
     }
@@ -669,8 +723,7 @@ function updateStatus() {
                 : "Vez das pretas";
     }
 
-    checkWarningElement.textContent =
-        displayedState.check_square ? "⚠ Xeque!" : "";
+    checkWarningElement.textContent = displayedState.check_square ? "⚠ Xeque!" : "";
 }
 
 
@@ -710,7 +763,6 @@ function renderHistory() {
 
         row.appendChild(cell);
         historyBody.appendChild(row);
-
     } else {
         history.forEach(move => {
             const row = document.createElement("tr");
@@ -770,13 +822,10 @@ function updateHistoryControls() {
 
     if (viewPly === 0) {
         historyPositionLabel.textContent = "Posição inicial";
-
     } else if (viewPly === total) {
         historyPositionLabel.textContent = "Posição atual";
-
     } else {
-        historyPositionLabel.textContent =
-            `Visualizando jogada ${Math.ceil(viewPly / 2)}`;
+        historyPositionLabel.textContent = `Visualizando jogada ${Math.ceil(viewPly / 2)}`;
     }
 }
 
@@ -790,10 +839,7 @@ async function goToPly(ply) {
         return;
     }
 
-    const targetPly = Math.max(
-        0,
-        Math.min(ply, gameState.total_plies)
-    );
+    const targetPly = Math.max(0, Math.min(ply, gameState.total_plies));
 
     if (targetPly === viewPly) {
         return;
@@ -818,14 +864,8 @@ async function goToPly(ply) {
                 : currentState.last_move;
 
             if (move && move.from && move.to) {
-                const from = direction > 0
-                    ? move.from
-                    : move.to;
-
-                const to = direction > 0
-                    ? move.to
-                    : move.from;
-
+                const from = direction > 0 ? move.from : move.to;
+                const to = direction > 0 ? move.to : move.from;
                 const piece = currentState.pieces[from];
 
                 viewPly = nextPly;
@@ -840,19 +880,16 @@ async function goToPly(ply) {
 
                     renderBoard();
                     await runMoveAnimation();
-
                 } else {
                     animation = null;
                     renderBoard();
                 }
-
             } else {
                 viewPly = nextPly;
                 animation = null;
                 renderBoard();
             }
         }
-
     } finally {
         animation = null;
         busy = false;
@@ -878,11 +915,8 @@ function nextPosition() {
 // --------------------------------------------------
 
 function renderCaptures() {
-    whiteCapturesElement.textContent =
-        (gameState.white_captures || []).join(" ") || "Nenhuma";
-
-    blackCapturesElement.textContent =
-        (gameState.black_captures || []).join(" ") || "Nenhuma";
+    whiteCapturesElement.textContent = (gameState.white_captures || []).join(" ") || "Nenhuma";
+    blackCapturesElement.textContent = (gameState.black_captures || []).join(" ") || "Nenhuma";
 }
 
 
@@ -948,20 +982,13 @@ function startClock() {
                 gameActive = false;
                 stopClock();
 
-                statusElement.textContent =
-                    "Tempo esgotado! Pretas venceram.";
-
+                statusElement.textContent = "Tempo esgotado! Pretas venceram.";
                 checkWarningElement.textContent = "TEMPO ESGOTADO";
                 updateStatus();
                 updateHistoryControls();
 
-                saveGameRecord(
-                    gameState,
-                    "loss",
-                    "0-1 (Tempo)"
-                );
+                saveGameRecord(gameState, "loss", "0-1 (Tempo)");
             }
-
         } else {
             blackTime = Math.max(0, blackTime - 1);
 
@@ -969,23 +996,16 @@ function startClock() {
                 gameActive = false;
                 stopClock();
 
-                statusElement.textContent =
-                    "Tempo esgotado! Brancas venceram.";
-
+                statusElement.textContent = "Tempo esgotado! Brancas venceram.";
                 checkWarningElement.textContent = "TEMPO ESGOTADO";
                 updateStatus();
                 updateHistoryControls();
 
-                saveGameRecord(
-                    gameState,
-                    "win",
-                    "1-0 (Tempo)"
-                );
+                saveGameRecord(gameState, "win", "1-0 (Tempo)");
             }
         }
 
         renderTimers();
-
     }, 1000);
 }
 
@@ -1091,8 +1111,7 @@ function renderBoard() {
                 color = blendColor(color, [40, 190, 80], 0.58);
             }
 
-            square.style.backgroundColor =
-                `rgb(${color.join(", ")})`;
+            square.style.backgroundColor = `rgb(${color.join(", ")})`;
 
             if (selectedSquare === squareName) {
                 square.classList.add("selected");
@@ -1105,8 +1124,7 @@ function renderBoard() {
 
                 if (piece) {
                     marker.className = "capture-marker";
-                    marker.style.borderWidth =
-                        `${Math.max(2, squareSize * 0.05)}px`;
+                    marker.style.borderWidth = `${Math.max(2, squareSize * 0.05)}px`;
                 } else {
                     marker.className = "legal-dot";
                 }
@@ -1114,11 +1132,8 @@ function renderBoard() {
                 square.appendChild(marker);
             }
 
-            const isDraggingPiece =
-                dragging && dragging.from === squareName;
-
-            const isAnimatingPiece =
-                animation && animation.to === squareName;
+            const isDraggingPiece = dragging && dragging.from === squareName;
+            const isAnimatingPiece = animation && animation.to === squareName;
 
             if (piece && !isDraggingPiece && !isAnimatingPiece) {
                 const image = document.createElement("img");
@@ -1183,140 +1198,17 @@ function renderBoard() {
 
 
 // --------------------------------------------------
-// ANÁLISE DE PARTIDA (STOCKFISH + FALLBACK LOCAL)
+// ANÁLISE DE PARTIDA (3 CAMADAS: STOCKFISH + EP/CAPS2 + TREINADOR)
 // --------------------------------------------------
 
-function evaluateMaterialBalance(pieces = {}) {
-    let score = 0;
-    for (const piece of Object.values(pieces)) {
-        if (!piece) continue;
-        const val = PIECE_VALUES[piece.type] || 0;
-        score += piece.color === "white" ? val : -val;
-    }
-    return Number(score.toFixed(1));
-}
+// A análise oficial vem do Stockfish no backend.
+// Não existe fallback por contagem de material: ele produzia avaliações
+// e classificações que não representavam a posição real.
 
-function estimateBestMoveForState(state) {
-    if (!state || !Array.isArray(state.legal_moves) || state.legal_moves.length === 0) {
-        return null;
-    }
-
-    const turn = state.turn;
-    const isWhite = turn === "white";
-    let bestMove = null;
-    let bestScore = isWhite ? -Infinity : Infinity;
-
-    for (const uci of state.legal_moves) {
-        const from = uci.slice(0, 2);
-        const to = uci.slice(2, 4);
-        const movingPiece = state.pieces?.[from];
-        const targetPiece = state.pieces?.[to];
-
-        let delta = 0;
-        if (targetPiece) {
-            const capVal = PIECE_VALUES[targetPiece.type] || 0;
-            delta += isWhite ? capVal : -capVal;
-        }
-
-        const centerFiles = ["d", "e"];
-        const centerRanks = ["4", "5"];
-        if (centerFiles.includes(to[0]) && centerRanks.includes(to[1])) {
-            delta += isWhite ? 0.3 : -0.3;
-        }
-
-        if (movingPiece && PIECE_VALUES[movingPiece.type] >= 3) {
-            delta += isWhite ? 0.15 : -0.15;
-        }
-
-        const score = evaluateMaterialBalance(state.pieces || {}) + delta;
-        if (isWhite ? score > bestScore : score < bestScore) {
-            bestScore = score;
-            bestMove = { from, to, uci };
-        }
-    }
-
-    return bestMove;
-}
-
-function classifyMoveDelta(ply, moverColor, evalBefore, evalAfter, playedMove, bestMove) {
-    if (ply <= 6) {
-        return "book";
-    }
-
-    const signedLoss = moverColor === "white"
-        ? evalBefore - evalAfter
-        : evalAfter - evalBefore;
-
-    const isBest = Boolean(
-        bestMove &&
-        playedMove &&
-        bestMove.from === playedMove.from &&
-        bestMove.to === playedMove.to
-    );
-
-    if (signedLoss >= 2.2) return "blunder";
-    if (signedLoss >= 1.1) return "mistake";
-    if (signedLoss >= 0.55) return "inaccuracy";
-    if (isBest && signedLoss <= 0.1 && Math.abs(evalAfter) >= 1.2) return "brilliant";
-    if (isBest || signedLoss <= 0.05) return "great";
-    return "good";
-}
-
-function buildAnalysisReport(game) {
-    const timeline = Array.isArray(game?.timeline) ? game.timeline : [];
-    const summary = {
-        white: { brilliant: 0, great: 0, good: 0, book: 0, inaccuracy: 0, mistake: 0, blunder: 0 },
-        black: { brilliant: 0, great: 0, good: 0, book: 0, inaccuracy: 0, mistake: 0, blunder: 0 }
-    };
-
-    if (!timeline.length) {
-        return { engine: "local", perPly: [], summary };
-    }
-
-    const evals = timeline.map(st => {
-        if (st.checkmate) {
-            return st.turn === "white" ? -99 : 99;
-        }
-        return evaluateMaterialBalance(st.pieces || {});
-    });
-
-    const perPly = timeline.map((st, idx) => {
-        const bestMove = estimateBestMoveForState(st);
-        const nextState = timeline[idx + 1] || null;
-        const playedMove = nextState?.last_move || null;
-
-        let classification = null;
-        let moverColor = null;
-
-        if (idx > 0 && st.last_move) {
-            moverColor = st.turn === "white" ? "black" : "white";
-            const prevBest = estimateBestMoveForState(timeline[idx - 1]);
-            classification = classifyMoveDelta(
-                idx,
-                moverColor,
-                evals[idx - 1],
-                evals[idx],
-                st.last_move,
-                prevBest
-            );
-
-            if (summary[moverColor] && MOVE_CLASSIFICATIONS[classification]) {
-                summary[moverColor][classification] += 1;
-            }
-        }
-
-        return {
-            ply: idx,
-            evalScore: evals[idx],
-            evalText: formatEvalText(evals[idx]),
-            bestMove,
-            playedMove,
-            classification,
-            moverColor
-        };
-    });
-
-    return { engine: "local", perPly, summary };
+function getClassificationBadgeStyleKey(classificationKey) {
+    return classificationKey === "best" || classificationKey === "excellent"
+        ? "good"
+        : classificationKey;
 }
 
 function formatEvalText(score) {
@@ -1328,13 +1220,19 @@ function formatEvalText(score) {
     return "0.0";
 }
 
-function renderEvalBar(score, customText = null) {
+function renderEvalBar(score, customText = null, expectedPoints = null) {
     if (!analysisEvalBlackEl || !analysisEvalWhiteEl || !analysisEvalScoreEl) {
         return;
     }
 
-    const clamped = Math.max(-10, Math.min(10, score));
-    const whitePct = 50 + (clamped / 10) * 45;
+    let whitePct;
+    if (typeof expectedPoints === "number") {
+        whitePct = 5 + expectedPoints * 90;
+    } else {
+        const clamped = Math.max(-10, Math.min(10, score));
+        whitePct = 50 + (clamped / 10) * 45;
+    }
+
     const blackPct = 100 - whitePct;
 
     analysisEvalWhiteEl.style.height = `${whitePct.toFixed(1)}%`;
@@ -1342,12 +1240,53 @@ function renderEvalBar(score, customText = null) {
     analysisEvalScoreEl.textContent = customText || formatEvalText(score);
 }
 
+function renderAnalysisMetrics() {
+    if (
+        !analysisAccWhiteEl ||
+        !analysisAccBlackEl ||
+        !analysisRatingWhiteEl ||
+        !analysisRatingBlackEl
+    ) {
+        return;
+    }
+
+    if (!analysisGame || !analysisReport) {
+        analysisAccWhiteEl.textContent = "—";
+        analysisAccBlackEl.textContent = "—";
+        analysisRatingWhiteEl.textContent = "Rating: —";
+        analysisRatingBlackEl.textContent = "Rating: —";
+        return;
+    }
+
+    const wAcc = analysisReport.accuracy?.white;
+    const bAcc = analysisReport.accuracy?.black;
+    const wRating = null;
+    const bRating = null;
+
+    analysisAccWhiteEl.textContent = typeof wAcc === "number" ? `${wAcc.toFixed(1)}%` : "—";
+    analysisAccBlackEl.textContent = typeof bAcc === "number" ? `${bAcc.toFixed(1)}%` : "—";
+    analysisRatingWhiteEl.textContent =
+        typeof wRating === "number" ? `Rating: ~${wRating}` : "Rating: —";
+    analysisRatingBlackEl.textContent =
+        typeof bRating === "number" ? `Rating: ~${bRating}` : "Rating: —";
+}
+
 function renderAnalysisClassificationSummary() {
     if (!analysisClassSummaryEl) {
         return;
     }
 
-    const order = ["brilliant", "great", "good", "book", "inaccuracy", "mistake", "blunder"];
+    const order = [
+        "brilliant",
+        "great",
+        "best",
+        "excellent",
+        "good",
+        "book",
+        "inaccuracy",
+        "mistake",
+        "blunder"
+    ];
     const wSum = analysisReport?.summary?.white || {};
     const bSum = analysisReport?.summary?.black || {};
 
@@ -1364,7 +1303,7 @@ function renderAnalysisClassificationSummary() {
         labelWrap.className = "analysis-class-label";
 
         const badge = document.createElement("span");
-        badge.className = `analysis-mini-badge ${key}`;
+        badge.className = `analysis-mini-badge ${getClassificationBadgeStyleKey(key)}`;
         badge.textContent = meta.symbol;
 
         const textSpan = document.createElement("span");
@@ -1378,7 +1317,9 @@ function renderAnalysisClassificationSummary() {
         wCount.textContent = String(wVal);
 
         const bCount = document.createElement("span");
-        bCount.className = `analysis-class-count ${key === "blunder" && bVal > 0 ? "blunder-val" : (bVal > 0 ? "has-val" : "")}`;
+        bCount.className = `analysis-class-count ${
+            key === "blunder" && bVal > 0 ? "blunder-val" : (bVal > 0 ? "has-val" : "")
+        }`;
         bCount.textContent = String(bVal);
 
         row.appendChild(labelWrap);
@@ -1389,7 +1330,11 @@ function renderAnalysisClassificationSummary() {
 }
 
 function getAnalysisMaxPly() {
-    if (!analysisGame || !Array.isArray(analysisGame.timeline) || analysisGame.timeline.length === 0) {
+    if (
+        !analysisGame ||
+        !Array.isArray(analysisGame.timeline) ||
+        analysisGame.timeline.length === 0
+    ) {
         return 0;
     }
     return analysisGame.timeline.length - 1;
@@ -1413,17 +1358,19 @@ function getAnalysisStateAtPly(ply) {
     };
 }
 
-function renderAnalysisArrowsAndBadges(plyInfo) {
+function renderAnalysisArrowsAndBadges(plyInfo, prevPlyInfo = null) {
     if (analysisBestArrowGroup) analysisBestArrowGroup.innerHTML = "";
     if (analysisPlayedArrowGroup) analysisPlayedArrowGroup.innerHTML = "";
     if (analysisSavedArrowsGroup) analysisSavedArrowsGroup.innerHTML = "";
     if (analysisPreviewArrowGroup) analysisPreviewArrowGroup.innerHTML = "";
     if (analysisBadgesLayer) analysisBadgesLayer.innerHTML = "";
 
-    // 1. Seta do melhor lance sugerido (verde)
-    if (plyInfo && analysisBestArrowGroup && plyInfo.bestMove) {
-        const fromCell = squareToCell(plyInfo.bestMove.from);
-        const toCell = squareToCell(plyInfo.bestMove.to);
+    // 1. Seta verde: melhor lance que a engine recomendava para esta jogada (prevPlyInfo.bestMove)
+    // ou para a posição inicial (ply 0 -> plyInfo.bestMove)
+    const recommendedMove = analysisPly > 0 ? prevPlyInfo?.bestMove : plyInfo?.bestMove;
+    if (analysisBestArrowGroup && recommendedMove) {
+        const fromCell = squareToCell(recommendedMove.from);
+        const toCell = squareToCell(recommendedMove.to);
         if (fromCell && toCell && !sameGridCell(fromCell, toCell)) {
             analysisBestArrowGroup.appendChild(
                 createSvgArrowPath(fromCell, toCell, "analysis-best-arrow", analysisFlipped)
@@ -1431,13 +1378,25 @@ function renderAnalysisArrowsAndBadges(plyInfo) {
         }
     }
 
-    // 2. Seta do lance que foi jogado nesse ply (âmbar) + badge de classificação
+    // 2. Seta âmbar: lance efetivamente jogado neste ply + badge de classificação
     const state = getAnalysisStateAtPly(analysisPly);
     if (plyInfo && state?.last_move) {
         const fromCell = squareToCell(state.last_move.from);
         const toCell = squareToCell(state.last_move.to);
 
-        if (analysisPlayedArrowGroup && fromCell && toCell && !sameGridCell(fromCell, toCell)) {
+        const sameAsBest = Boolean(
+            recommendedMove &&
+            recommendedMove.from === state.last_move.from &&
+            recommendedMove.to === state.last_move.to
+        );
+
+        if (
+            analysisPlayedArrowGroup &&
+            fromCell &&
+            toCell &&
+            !sameGridCell(fromCell, toCell) &&
+            !sameAsBest
+        ) {
             analysisPlayedArrowGroup.appendChild(
                 createSvgArrowPath(fromCell, toCell, "analysis-played-arrow", analysisFlipped)
             );
@@ -1462,7 +1421,7 @@ function renderAnalysisArrowsAndBadges(plyInfo) {
         }
     }
 
-    // 3. Setas manuais feitas com botão direito na análise (já armazenadas em coordenadas lógicas)
+    // 3. Setas manuais feitas com botão direito na análise
     if (analysisSavedArrowsGroup) {
         for (const arrow of analysisCustomArrows) {
             if (!sameGridCell(arrow.from, arrow.to)) {
@@ -1481,8 +1440,37 @@ function renderAnalysisArrowsAndBadges(plyInfo) {
         !sameGridCell(analysisArrowStart, analysisArrowHover)
     ) {
         analysisPreviewArrowGroup.appendChild(
-            createSvgArrowPath(analysisArrowStart, analysisArrowHover, "chess-arrow-shape preview", analysisFlipped)
+            createSvgArrowPath(
+                analysisArrowStart,
+                analysisArrowHover,
+                "chess-arrow-shape preview",
+                analysisFlipped
+            )
         );
+    }
+}
+
+function renderAnalysisMoveCell(cellEl, sanText, plyNumber, perPly) {
+    if (!sanText) {
+        cellEl.textContent = "—";
+        return;
+    }
+
+    cellEl.dataset.analysisPly = plyNumber;
+    const info = perPly[plyNumber];
+    const meta = info?.classification ? MOVE_CLASSIFICATIONS[info.classification] : null;
+
+    if (meta) {
+        cellEl.innerHTML =
+            `<span class="analysis-move-cell">${sanText} ` +
+            `<span class="analysis-mini-badge ${getClassificationBadgeStyleKey(meta.key)}">` +
+            `${meta.symbol}</span></span>`;
+    } else {
+        cellEl.textContent = sanText;
+    }
+
+    if (analysisPly === plyNumber) {
+        cellEl.classList.add("history-move-current");
     }
 }
 
@@ -1517,35 +1505,8 @@ function renderAnalysisMoves() {
         const whitePly = (move.number - 1) * 2 + 1;
         const blackPly = whitePly + 1;
 
-        if (move.white) {
-            whiteTd.dataset.analysisPly = whitePly;
-            const wInfo = perPly[whitePly];
-            const wMeta = wInfo?.classification ? MOVE_CLASSIFICATIONS[wInfo.classification] : null;
-            whiteTd.innerHTML = wMeta
-                ? `<span class="analysis-move-cell">${move.white} <span class="analysis-mini-badge ${wMeta.key}">${wMeta.symbol}</span></span>`
-                : move.white;
-
-            if (analysisPly === whitePly) {
-                whiteTd.classList.add("history-move-current");
-            }
-        } else {
-            whiteTd.textContent = "—";
-        }
-
-        if (move.black) {
-            blackTd.dataset.analysisPly = blackPly;
-            const bInfo = perPly[blackPly];
-            const bMeta = bInfo?.classification ? MOVE_CLASSIFICATIONS[bInfo.classification] : null;
-            blackTd.innerHTML = bMeta
-                ? `<span class="analysis-move-cell">${move.black} <span class="analysis-mini-badge ${bMeta.key}">${bMeta.symbol}</span></span>`
-                : move.black;
-
-            if (analysisPly === blackPly) {
-                blackTd.classList.add("history-move-current");
-            }
-        } else {
-            blackTd.textContent = "—";
-        }
+        renderAnalysisMoveCell(whiteTd, move.white, whitePly, perPly);
+        renderAnalysisMoveCell(blackTd, move.black, blackPly, perPly);
 
         row.appendChild(numTd);
         row.appendChild(whiteTd);
@@ -1576,6 +1537,7 @@ function renderAnalysisView() {
     const maxPly = getAnalysisMaxPly();
     const state = getAnalysisStateAtPly(analysisPly);
     const plyInfo = analysisReport?.perPly?.[analysisPly] || null;
+    const prevPlyInfo = analysisPly > 0 ? (analysisReport?.perPly?.[analysisPly - 1] || null) : null;
 
     if (analysisGameBadge) {
         analysisGameBadge.textContent = analysisGame ? `#${analysisGame.id}` : "—";
@@ -1585,7 +1547,12 @@ function renderAnalysisView() {
         analysisMetaInline.textContent = analysisGame ? `${analysisPly} / ${maxPly}` : "0 / 0";
     }
 
-    renderEvalBar(plyInfo ? plyInfo.evalScore : 0, plyInfo?.evalText || null);
+    renderEvalBar(
+        plyInfo ? plyInfo.evalScore : 0,
+        plyInfo?.evalText || null,
+        plyInfo?.expectedPoints ?? null
+    );
+    renderAnalysisMetrics();
     renderAnalysisClassificationSummary();
 
     if (analysisPlyLabel) {
@@ -1596,23 +1563,26 @@ function renderAnalysisView() {
         } else {
             const moveNum = Math.ceil(analysisPly / 2);
             const sideText = analysisPly % 2 === 1 ? "Brancas" : "Pretas";
-            const classMeta = plyInfo?.classification ? MOVE_CLASSIFICATIONS[plyInfo.classification] : null;
+            const classMeta = plyInfo?.classification
+                ? MOVE_CLASSIFICATIONS[plyInfo.classification]
+                : null;
+            const epText = typeof plyInfo?.expectedPoints === "number"
+                ? ` · Chance Brancas: ${Math.round(plyInfo.expectedPoints * 100)}%`
+                : "";
             analysisPlyLabel.textContent = classMeta
-                ? `Lance ${moveNum} (${sideText}) · ${classMeta.label} (${classMeta.symbol})`
-                : `Lance ${moveNum} (${sideText})`;
+                ? `Lance ${moveNum} (${sideText}) · ${classMeta.label} (${classMeta.symbol})${epText}`
+                : `Lance ${moveNum} (${sideText})${epText}`;
         }
     }
 
     if (analysisMoveFeedback) {
         if (!analysisGame) {
             analysisMoveFeedback.textContent = "";
-        } else if (plyInfo?.classification && MOVE_CLASSIFICATIONS[plyInfo.classification]) {
-            const bestText = plyInfo.bestMove
-                ? `Melhor sugerido: ${plyInfo.bestMove.from}→${plyInfo.bestMove.to}`
-                : "";
-            analysisMoveFeedback.textContent = `${MOVE_CLASSIFICATIONS[plyInfo.classification].desc} ${bestText}`.trim();
-        } else if (plyInfo?.bestMove) {
-            analysisMoveFeedback.textContent = `Melhor lance sugerido: ${plyInfo.bestMove.from}→${plyInfo.bestMove.to}`;
+        } else if (plyInfo?.commentary) {
+            analysisMoveFeedback.textContent = plyInfo.commentary;
+        } else if (prevPlyInfo?.bestMove) {
+            analysisMoveFeedback.textContent =
+                `Melhor lance sugerido: ${prevPlyInfo.bestMove.from}→${prevPlyInfo.bestMove.to}`;
         } else {
             analysisMoveFeedback.textContent = analysisGame.resultLabel || "";
         }
@@ -1626,7 +1596,7 @@ function renderAnalysisView() {
     analysisBoardElement.innerHTML = "";
     if (!state) {
         renderAnalysisMoves();
-        renderAnalysisArrowsAndBadges(null);
+        renderAnalysisArrowsAndBadges(null, null);
         return;
     }
 
@@ -1671,7 +1641,7 @@ function renderAnalysisView() {
     }
 
     renderAnalysisMoves();
-    renderAnalysisArrowsAndBadges(plyInfo);
+    renderAnalysisArrowsAndBadges(plyInfo, prevPlyInfo);
 }
 
 function setAnalysisPly(targetPly) {
@@ -1689,7 +1659,7 @@ async function openGameInAnalysis(game) {
     }
 
     analysisGame = game;
-    analysisReport = buildAnalysisReport(game);
+    analysisReport = null;
     analysisPly = Array.isArray(game.timeline) && game.timeline.length > 0
         ? game.timeline.length - 1
         : 0;
@@ -1699,13 +1669,14 @@ async function openGameInAnalysis(game) {
     analysisArrowHover = null;
 
     switchFeatureTab("analysis");
+    renderAnalysisView();
 
     if (!Array.isArray(game.history) || game.history.length === 0) {
         return;
     }
 
     if (analysisMoveFeedback) {
-        analysisMoveFeedback.textContent = "Analisando partida com Stockfish...";
+        analysisMoveFeedback.textContent = "Analisando a partida com Stockfish...";
     }
 
     try {
@@ -1716,68 +1687,31 @@ async function openGameInAnalysis(game) {
         });
 
         if (!response.ok) {
-            renderAnalysisView();
-            return;
+            const detail = await response.text().catch(() => "");
+            throw new Error(detail || `Falha na análise (HTTP ${response.status}).`);
         }
 
         const stockfishReport = await response.json();
-        if (analysisGame?.id === game.id && Array.isArray(stockfishReport.perPly)) {
+        if (
+            analysisGame?.id === game.id &&
+            stockfishReport.engine === "stockfish" &&
+            Array.isArray(stockfishReport.perPly) &&
+            stockfishReport.perPly.length === (game.timeline?.length || stockfishReport.perPly.length)
+        ) {
             analysisReport = stockfishReport;
             renderAnalysisView();
-            showToast("Análise do Stockfish concluída.");
+            showToast("Revisão de partida concluída.");
+        } else {
+            throw new Error("O Stockfish retornou uma análise incompleta.");
         }
     } catch (error) {
-        console.warn("Stockfish indisponível, usando avaliação local:", error);
-        renderAnalysisView();
-    }
-}
-
-async function openGameInAnalysis(game) {
-    if (!game) {
-        return;
-    }
-
-    analysisGame = game;
-    analysisReport = buildAnalysisReport(game);
-    analysisPly = Array.isArray(game.timeline) && game.timeline.length > 0
-        ? game.timeline.length - 1
-        : 0;
-    analysisCustomArrows.length = 0;
-    isAnalysisRightDrawing = false;
-    analysisArrowStart = null;
-    analysisArrowHover = null;
-
-    switchFeatureTab("analysis");
-
-    if (!Array.isArray(game.history) || game.history.length === 0) {
-        return;
-    }
-
-    if (analysisMoveFeedback) {
-        analysisMoveFeedback.textContent = "Analisando partida com Stockfish...";
-    }
-
-    try {
-        const response = await fetch("/api/games/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ history: game.history })
-        });
-
-        if (!response.ok) {
-            renderAnalysisView();
-            return;
+        console.error("Falha na análise com Stockfish:", error);
+        if (analysisGame?.id === game.id && analysisMoveFeedback) {
+            analysisMoveFeedback.textContent =
+                "Não foi possível concluir a análise. As métricas foram ocultadas para não exibir números imprecisos.";
         }
-
-        const stockfishReport = await response.json();
-        if (analysisGame?.id === game.id && Array.isArray(stockfishReport.perPly)) {
-            analysisReport = stockfishReport;
-            renderAnalysisView();
-            showToast("Análise do Stockfish concluída.");
-        }
-    } catch (error) {
-        console.warn("Stockfish indisponível, usando avaliação local:", error);
         renderAnalysisView();
+        showToast("Não foi possível analisar a partida.");
     }
 }
 
@@ -1867,21 +1801,16 @@ function runMoveAnimation() {
                 1
             );
 
-            const smoothProgress =
-                progress * progress * (3 - 2 * progress);
+            const smoothProgress = progress * progress * (3 - 2 * progress);
 
-            const currentX =
-                start.x + (end.x - start.x) * smoothProgress;
-
-            const currentY =
-                start.y + (end.y - start.y) * smoothProgress;
+            const currentX = start.x + (end.x - start.x) * smoothProgress;
+            const currentY = start.y + (end.y - start.y) * smoothProgress;
 
             currentAnimation.image.style.left = `${currentX}px`;
             currentAnimation.image.style.top = `${currentY}px`;
 
             if (progress < 1) {
                 requestAnimationFrame(frame);
-
             } else {
                 animation = null;
                 renderBoard();
@@ -1918,6 +1847,43 @@ function applyGameState(data) {
 // MOVIMENTOS (HUMANO + RESPOSTA DO BOT)
 // --------------------------------------------------
 
+function applyIncrementIfNeeded(movingColor) {
+    if (!isUntimedMatch() && activeConfig.incrementSeconds > 0 && clockStarted) {
+        if (movingColor === "white") {
+            whiteTime += activeConfig.incrementSeconds;
+        } else if (movingColor === "black") {
+            blackTime += activeConfig.incrementSeconds;
+        }
+        renderTimers();
+    }
+}
+
+async function handleGameEndIfNeeded(movingPieceColor) {
+    if (gameState.checkmate || gameState.stalemate) {
+        gameActive = false;
+        stopClock();
+        updateStatus();
+
+        if (gameState.checkmate) {
+            const whiteWon = gameState.turn !== "white";
+            await saveGameRecord(
+                gameState,
+                whiteWon ? "win" : "loss",
+                whiteWon ? "1-0 (Brancas)" : "0-1 (Pretas)"
+            );
+        } else {
+            await saveGameRecord(gameState, "draw", "½-½ (Empate)");
+        }
+        return true;
+    }
+
+    if (!clockStarted && movingPieceColor === "white") {
+        clockStarted = true;
+        startClock();
+    }
+    return false;
+}
+
 async function triggerBotMoveIfNeeded() {
     if (!gameActive || !isBotTurn() || !gameState || !gameState.legal_moves?.length) {
         return;
@@ -1950,14 +1916,7 @@ async function triggerBotMoveIfNeeded() {
         selectedSquare = null;
         clearDrawnArrows();
 
-        if (!isUntimedMatch() && activeConfig.incrementSeconds > 0 && clockStarted) {
-            if (movingPiece?.color === "white") {
-                whiteTime += activeConfig.incrementSeconds;
-            } else if (movingPiece?.color === "black") {
-                blackTime += activeConfig.incrementSeconds;
-            }
-            renderTimers();
-        }
+        applyIncrementIfNeeded(movingPiece?.color);
 
         if (movingPiece && lastMove) {
             animation = {
@@ -1972,25 +1931,7 @@ async function triggerBotMoveIfNeeded() {
             renderBoard();
         }
 
-        if (gameState.checkmate || gameState.stalemate) {
-            gameActive = false;
-            stopClock();
-            updateStatus();
-
-            if (gameState.checkmate) {
-                const whiteWon = gameState.turn !== "white";
-                await saveGameRecord(
-                    gameState,
-                    whiteWon ? "win" : "loss",
-                    whiteWon ? "1-0 (Brancas)" : "0-1 (Pretas)"
-                );
-            } else {
-                await saveGameRecord(gameState, "draw", "½-½ (Empate)");
-            }
-        } else if (!clockStarted) {
-            clockStarted = true;
-            startClock();
-        }
+        await handleGameEndIfNeeded(movingPiece?.color);
     } catch (error) {
         showToast(error.message);
         console.error(error);
@@ -2024,9 +1965,7 @@ async function makeMove(fromSquare, toSquare, animate = true) {
     }
 
     const legalMove = gameState.legal_moves.some(
-        move =>
-            move.startsWith(fromSquare) &&
-            move.slice(2, 4) === toSquare
+        move => move.startsWith(fromSquare) && move.slice(2, 4) === toSquare
     );
 
     if (!legalMove) {
@@ -2040,26 +1979,21 @@ async function makeMove(fromSquare, toSquare, animate = true) {
     busy = true;
 
     try {
-        const response = await fetch(
-            `/api/games/${gameId}/moves`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    from_square: fromSquare,
-                    to_square: toSquare
-                })
-            }
-        );
+        const response = await fetch(`/api/games/${gameId}/moves`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                from_square: fromSquare,
+                to_square: toSquare
+            })
+        });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(
-                data.detail || "Movimento não permitido."
-            );
+            throw new Error(data.detail || "Movimento não permitido.");
         }
 
         gameState = data;
@@ -2067,14 +2001,7 @@ async function makeMove(fromSquare, toSquare, animate = true) {
         selectedSquare = null;
         clearDrawnArrows();
 
-        if (!isUntimedMatch() && activeConfig.incrementSeconds > 0 && clockStarted) {
-            if (movingPiece?.color === "white") {
-                whiteTime += activeConfig.incrementSeconds;
-            } else if (movingPiece?.color === "black") {
-                blackTime += activeConfig.incrementSeconds;
-            }
-            renderTimers();
-        }
+        applyIncrementIfNeeded(movingPiece?.color);
 
         if (animate && movingPiece) {
             animation = {
@@ -2087,37 +2014,11 @@ async function makeMove(fromSquare, toSquare, animate = true) {
             renderBoard();
 
             await runMoveAnimation();
-
         } else {
             renderBoard();
         }
 
-        if (gameState.checkmate || gameState.stalemate) {
-            gameActive = false;
-            stopClock();
-            updateStatus();
-
-            if (gameState.checkmate) {
-                const whiteWon = gameState.turn !== "white";
-
-                await saveGameRecord(
-                    gameState,
-                    whiteWon ? "win" : "loss",
-                    whiteWon ? "1-0 (Brancas)" : "0-1 (Pretas)"
-                );
-            } else {
-                await saveGameRecord(
-                    gameState,
-                    "draw",
-                    "½-½ (Empate)"
-                );
-            }
-
-        } else if (!clockStarted && movingPiece?.color === "white") {
-            clockStarted = true;
-            startClock();
-        }
-
+        await handleGameEndIfNeeded(movingPiece?.color);
     } catch (error) {
         showToast(error.message);
         console.error(error);
@@ -2126,7 +2027,6 @@ async function makeMove(fromSquare, toSquare, animate = true) {
         dragging = null;
 
         renderBoard();
-
     } finally {
         busy = false;
         updateHistoryControls();
@@ -2183,19 +2083,14 @@ async function resetGame() {
     updateHistoryControls();
 
     try {
-        const response = await fetch(
-            `/api/games/${gameId}/reset`,
-            {
-                method: "POST"
-            }
-        );
+        const response = await fetch(`/api/games/${gameId}/reset`, {
+            method: "POST"
+        });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(
-                data.detail || "Não foi possível reiniciar."
-            );
+            throw new Error(data.detail || "Não foi possível reiniciar.");
         }
 
         sessionRecordId = generateRecordId();
@@ -2206,11 +2101,9 @@ async function resetGame() {
         applyGameState(data);
 
         showToast("Partida reiniciada.");
-
     } catch (error) {
         showToast(error.message);
         console.error(error);
-
     } finally {
         busy = false;
         updateHistoryControls();
@@ -2241,26 +2134,20 @@ async function undoMove() {
     updateHistoryControls();
 
     try {
-        const response = await fetch(
-            `/api/games/${gameId}/undo`,
-            {
-                method: "POST"
-            }
-        );
+        const response = await fetch(`/api/games/${gameId}/undo`, {
+            method: "POST"
+        });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(
-                data.detail || "Não foi possível desfazer."
-            );
+            throw new Error(data.detail || "Não foi possível desfazer.");
         }
 
         applyGameState(data);
 
         if (gameState.total_plies === 0) {
             resetClock();
-
         } else {
             clockStarted = true;
 
@@ -2272,11 +2159,9 @@ async function undoMove() {
         }
 
         showToast("Última jogada desfeita.");
-
     } catch (error) {
         showToast(error.message);
         console.error(error);
-
     } finally {
         busy = false;
         updateHistoryControls();
@@ -2361,7 +2246,6 @@ async function startConfiguredGame() {
                     : "Sorteio: você joga de Pretas."
             );
         }
-
     } catch (error) {
         showToast(error.message || "Erro ao iniciar a partida.");
         console.error(error);
@@ -2535,7 +2419,8 @@ function renderGamePreview(game) {
     previewDate.textContent = game.date;
     previewResult.textContent = game.resultLabel;
     previewTime.textContent = game.mode;
-    previewPlies.textContent = `${fullMoves} jogada${fullMoves === 1 ? "" : "s"} (${game.plies} meio-lances)`;
+    previewPlies.textContent =
+        `${fullMoves} jogada${fullMoves === 1 ? "" : "s"} (${game.plies} meio-lances)`;
     previewPgn.textContent = game.pgn;
 
     btnInspectAnalysis.disabled = false;
@@ -2563,7 +2448,9 @@ function renderSavedGamesList() {
     });
 
     gamesCountLabel.textContent =
-        `${filtered.length} partida${filtered.length === 1 ? "" : "s"} registrada${filtered.length === 1 ? "" : "s"}`;
+        `${filtered.length} partida${filtered.length === 1 ? "" : "s"} registrada${
+            filtered.length === 1 ? "" : "s"
+        }`;
 
     savedGamesBody.innerHTML = "";
 
@@ -3017,8 +2904,7 @@ document.addEventListener("pointerup", async event => {
             return;
         }
 
-        const endCell =
-            getLogicalCellFromClientPoint(event.clientX, event.clientY) || arrowHoverCell;
+        const endCell = getLogicalCellFromClientPoint(event.clientX, event.clientY) || arrowHoverCell;
 
         isRightDrawing = false;
         if (previewArrowGroup) {
@@ -3039,10 +2925,7 @@ document.addEventListener("pointerup", async event => {
         return;
     }
 
-    const destination = getSquareAtPoint(
-        event.clientX,
-        event.clientY
-    );
+    const destination = getSquareAtPoint(event.clientX, event.clientY);
 
     if (dragging) {
         const origin = dragging.from;
@@ -3077,8 +2960,7 @@ document.addEventListener("pointerup", async event => {
     }
 
     if (selectedSquare && selectedSquare !== destination) {
-        const legalDestinations =
-            getLegalDestinations(selectedSquare);
+        const legalDestinations = getLegalDestinations(selectedSquare);
 
         if (legalDestinations.includes(destination)) {
             await makeMove(selectedSquare, destination, true);
@@ -3087,10 +2969,7 @@ document.addEventListener("pointerup", async event => {
 
         const targetPiece = gameState.pieces[destination];
 
-        if (
-            targetPiece &&
-            targetPiece.color === gameState.turn
-        ) {
+        if (targetPiece && targetPiece.color === gameState.turn) {
             selectedSquare = destination;
         } else {
             selectedSquare = null;
@@ -3102,14 +2981,10 @@ document.addEventListener("pointerup", async event => {
 
     if (selectedSquare === destination) {
         selectedSquare = null;
-
     } else {
         const piece = gameState.pieces[destination];
 
-        selectedSquare =
-            piece && piece.color === gameState.turn
-                ? destination
-                : null;
+        selectedSquare = piece && piece.color === gameState.turn ? destination : null;
     }
 
     renderBoard();
@@ -3129,10 +3004,7 @@ historyBody.addEventListener("click", event => {
 
     const ply = Number(cell.dataset.ply);
 
-    if (
-        Number.isInteger(ply) &&
-        ply <= gameState.total_plies
-    ) {
+    if (Number.isInteger(ply) && ply <= gameState.total_plies) {
         goToPly(ply);
     }
 });
@@ -3219,17 +3091,21 @@ if (btnInspectAnalysis) {
 // --------------------------------------------------
 
 function switchFeatureTab(feature) {
-    if (feature === "play" && !isMatchConfigured) {
-        showToast("Configure a partida antes de jogar.");
-        feature = "settings";
-    }
-
     const viewMap = {
         play: document.getElementById("view-play"),
         analysis: document.getElementById("view-analysis"),
         games: document.getElementById("view-games"),
         settings: document.getElementById("view-settings")
     };
+
+    if (!viewMap[feature]) {
+        feature = "settings";
+    }
+
+    if (feature === "play" && !isMatchConfigured) {
+        showToast("Configure a partida antes de jogar.");
+        feature = "settings";
+    }
 
     const subtitles = {
         play: activeConfig?.mode === "bot"
@@ -3240,15 +3116,8 @@ function switchFeatureTab(feature) {
         settings: "Configuração de partida"
     };
 
-    if (!viewMap[feature]) {
-        return;
-    }
-
     document.querySelectorAll("[data-feature]").forEach(button => {
-        button.classList.toggle(
-            "active",
-            button.dataset.feature === feature
-        );
+        button.classList.toggle("active", button.dataset.feature === feature);
     });
 
     Object.entries(viewMap).forEach(([key, section]) => {
@@ -3288,8 +3157,7 @@ document.addEventListener("click", event => {
         return;
     }
 
-    currentBoardTheme =
-        currentBoardTheme === "default" ? "purple" : "default";
+    currentBoardTheme = currentBoardTheme === "default" ? "purple" : "default";
 
     if (currentBoardTheme === "purple") {
         document.documentElement.setAttribute("data-board-theme", "purple");
@@ -3317,16 +3185,9 @@ document.addEventListener("click", event => {
 
 window.addEventListener("pagehide", () => {
     if (isMatchConfigured && gameState && gameState.total_plies > 0 && gameActive) {
-        const record = buildGameRecord(
-            gameState,
-            "draw",
-            "½-½ (Interrompida)"
-        );
+        const record = buildGameRecord(gameState, "draw", "½-½ (Interrompida)");
 
-        const blob = new Blob(
-            [JSON.stringify(record)],
-            { type: "application/json" }
-        );
+        const blob = new Blob([JSON.stringify(record)], { type: "application/json" });
 
         navigator.sendBeacon("/api/games/history", blob);
     }

@@ -258,6 +258,11 @@ a {
 }
 
 /* CONTROLE DE VIEWS */
+.feature-view {
+    display: block;
+    width: 100%;
+    overflow-x: clip;
+}
 
 .feature-view[hidden] {
     display: none !important;
@@ -1055,6 +1060,48 @@ a {
     overflow-wrap: anywhere;
     font-family: Arial, sans-serif;
     font-size: 17px;
+}
+
+.analysis-metrics-card {
+    margin-bottom: 0;
+    padding: 12px 14px;
+}
+
+.analysis-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.analysis-metric-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px;
+    background: var(--panel);
+    border: 1px solid var(--subborder);
+    border-radius: 2px;
+}
+
+.analysis-metric-side {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.analysis-metric-acc {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-light);
+}
+
+.analysis-metric-rating {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
 }
 
 /* ==================================================
