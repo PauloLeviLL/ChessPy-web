@@ -157,6 +157,8 @@ def find_stockfish_binary() -> str | None:
             if not item.is_file():
                 continue
             name_lower = item.name.lower()
+            if name_lower in {"authors", "copying", "license", "readme"}:
+                continue
             if name_lower.endswith(ignored_suffixes):
                 continue
 
@@ -164,15 +166,14 @@ def find_stockfish_binary() -> str | None:
                 if name_lower.endswith(".exe") or "stockfish" in name_lower:
                     return str(item)
             else:
-                if name_lower.endswith(".exe"):
+                if name_lower.endswith(".exe") or "stockfish" not in name_lower:
                     continue
-                if "stockfish" in name_lower or os.access(item, os.X_OK):
-                    if not os.access(item, os.X_OK):
-                        try:
-                            os.chmod(item, 0o755)
-                        except OSError:
-                            pass
-                    return str(item)
+                if not os.access(item, os.X_OK):
+                    try:
+                        os.chmod(item, 0o755)
+                    except OSError:
+                        pass
+                return str(item)
 
     if os.name == "nt":
         for fallback in (
