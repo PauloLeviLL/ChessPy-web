@@ -18,6 +18,7 @@ def init_db() -> None:
             """
             CREATE TABLE IF NOT EXISTS saved_games (
                 id TEXT PRIMARY KEY,
+                player_id TEXT NOT NULL DEFAULT 'legacy',
                 date TEXT NOT NULL,
                 mode TEXT NOT NULL,
                 plies INTEGER NOT NULL,
@@ -31,19 +32,40 @@ def init_db() -> None:
             )
             """
         )
+
+        columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(saved_games)").fetchall()
+        }
+        if "player_id" not in columns:
+            conn.execute(
+                """
+                ALTER TABLE saved_games
+                ADD COLUMN player_id TEXT NOT NULL DEFAULT 'legacy'
+                """
+            )
+
+        conn.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_saved_games_player_created
+            ON saved_games (player_id, created_at DESC)
+            """
+        )
         conn.commit()
 
 
-def upsert_saved_game(record: dict) -> dict:
+def upsert_saved_game(record: dict, player_id: str) -> dict:
+    clean_player_id = (player_id or "").strip() or "legacy"
     with get_connection() as conn:
         conn.execute(
             """
             INSERT INTO saved_games (
-                id, date, mode, plies, outcome, result_label,
+                id, player_id, date, mode, plies, outcome, result_label,
                 pgn, final_pieces, timeline, history, created_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
+                player_id = excluded.player_id,
                 date = excluded.date,
                 mode = excluded.mode,
                 plies = excluded.plies,
@@ -56,6 +78,7 @@ def upsert_saved_game(record: dict) -> dict:
             """,
             (
                 record["id"],
+                clean_player_id,
                 record["date"],
                 record["mode"],
                 record["plies"],
@@ -69,18 +92,21 @@ def upsert_saved_game(record: dict) -> dict:
             ),
         )
         conn.commit()
-    return record
+    return {**record, "playerId": clean_player_id}
 
 
-def list_saved_games() -> list[dict]:
+def list_saved_games(player_id: str) -> list[dict]:
+    clean_player_id = (player_id or "").strip() or "legacy"
     with get_connection() as conn:
         rows = conn.execute(
             """
-            SELECT id, date, mode, plies, outcome, result_label,
+            SELECT id, player_id, date, mode, plies, outcome, result_label,
                    pgn, final_pieces, timeline, history
             FROM saved_games
+            WHERE player_id = ?
             ORDER BY created_at DESC
-            """
+            """,
+            (clean_player_id,),
         ).fetchall()
 
     result = []
@@ -88,6 +114,7 @@ def list_saved_games() -> list[dict]:
         result.append(
             {
                 "id": row["id"],
+                "playerId": row["player_id"],
                 "date": row["date"],
                 "mode": row["mode"],
                 "plies": row["plies"],
@@ -102,11 +129,12 @@ def list_saved_games() -> list[dict]:
     return result
 
 
-def delete_saved_game(record_id: str) -> bool:
+def delete_saved_game(record_id: str, player_id: str) -> bool:
+    clean_player_id = (player_id or "").strip() or "legacy"
     with get_connection() as conn:
         cursor = conn.execute(
-            "DELETE FROM saved_games WHERE id = ?",
-            (record_id.upper(),),
+            "DELETE FROM saved_games WHERE id = ? AND player_id = ?",
+            (record_id.upper(), clean_player_id),
         )
         conn.commit()
         return cursor.rowcount > 0

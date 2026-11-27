@@ -145,6 +145,7 @@ class MoveRequest(BaseModel):
 
 class SaveGameRequest(BaseModel):
     id: str
+    playerId: str | None = None
     date: str | None = None
     mode: str = "10+0 Rápida"
     plies: int
@@ -297,8 +298,8 @@ def force_sync_friend_bot():
 
 
 @app.get("/api/games")
-def get_saved_games():
-    return list_saved_games()
+def get_saved_games(player_id: str | None = None):
+    return list_saved_games(player_id or "legacy")
 
 
 @app.post("/api/games/history")
@@ -307,7 +308,8 @@ def save_game_history(payload: SaveGameRequest):
     if not record.get("date"):
         record["date"] = datetime.now().strftime("%d/%m/%Y")
     record["id"] = record["id"].upper()
-    return upsert_saved_game(record)
+    player_id = (record.get("playerId") or "").strip() or "legacy"
+    return upsert_saved_game(record, player_id=player_id)
 
 
 @app.post("/api/games/analyze")
@@ -327,8 +329,8 @@ def analyze_saved_game(payload: AnalyzeGameRequest):
 
 
 @app.delete("/api/games/{record_id}")
-def remove_saved_game(record_id: str):
-    deleted = delete_saved_game(record_id)
+def remove_saved_game(record_id: str, player_id: str | None = None):
+    deleted = delete_saved_game(record_id, player_id=player_id or "legacy")
     if not deleted:
         raise HTTPException(
             status_code=404,

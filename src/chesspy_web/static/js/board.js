@@ -2280,6 +2280,24 @@ const btnInspectAnalysis = document.getElementById("btn-inspect-in-analysis");
 const btnDeleteSavedGame = document.getElementById("btn-delete-saved-game");
 
 
+const PLAYER_ID_STORAGE_KEY = "chesspy_player_id";
+
+function getPlayerId() {
+    try {
+        let playerId = localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+        if (!playerId) {
+            playerId = (
+                window.crypto?.randomUUID?.() ||
+                `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 10)}`
+            );
+            localStorage.setItem(PLAYER_ID_STORAGE_KEY, playerId);
+        }
+        return playerId;
+    } catch {
+        return "legacy";
+    }
+}
+
 function buildModeLabel() {
     if (!activeConfig) {
         return "10+0 Rápida";
@@ -2308,6 +2326,7 @@ function buildGameRecord(state, outcome, resultLabel) {
 
     return {
         id: sessionRecordId,
+        playerId: getPlayerId(),
         date: new Date().toLocaleDateString("pt-BR"),
         mode: buildModeLabel(),
         plies: state.total_plies,
@@ -2348,7 +2367,8 @@ async function saveGameRecord(state, outcome, resultLabel) {
 
 async function loadSavedGames() {
     try {
-        const response = await fetch("/api/games");
+        const playerId = encodeURIComponent(getPlayerId());
+        const response = await fetch(`/api/games?player_id=${playerId}`);
 
         if (response.ok) {
             const data = await response.json();
@@ -2524,9 +2544,10 @@ async function deleteSelectedSavedGame() {
     }
 
     const targetId = selectedSavedGameId;
+    const playerId = encodeURIComponent(getPlayerId());
 
     try {
-        const response = await fetch(`/api/games/${targetId}`, {
+        const response = await fetch(`/api/games/${targetId}?player_id=${playerId}`, {
             method: "DELETE"
         });
 
