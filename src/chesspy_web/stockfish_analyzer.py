@@ -114,22 +114,53 @@ OPENING_BOOK_LINES: dict[tuple[str, ...], str] = {
 def find_stockfish_binary() -> str | None:
     env_path = os.getenv("STOCKFISH_PATH")
     if env_path and os.path.isfile(env_path):
-        return env_path
+        if os.name == "nt" or not env_path.lower().endswith(".exe"):
+            return env_path
 
     project_root = Path(__file__).resolve().parents[1]
-    bundled_exe = project_root / "bin" / "stockfish.exe"
+    bin_dir = project_root / "bin"
+    candidates: list[str | None] = []
 
-    candidates = [
-        str(bundled_exe),
-        shutil.which("stockfish"),
-        "/usr/games/stockfish",
-        "/usr/bin/stockfish",
-        "bin/stockfish.exe",
-        "../bin/stockfish.exe",
-    ]
+    if bin_dir.is_dir():
+        for item in sorted(bin_dir.iterdir()):
+            if not item.is_file():
+                continue
+            name_lower = item.name.lower()
+            if os.name == "nt":
+                if name_lower.endswith(".exe") or name_lower.startswith("stockfish"):
+                    candidates.append(str(item))
+            else:
+                if name_lower.startswith("stockfish") and not name_lower.endswith(".exe"):
+                    candidates.append(str(item))
+
+    if os.name == "nt":
+        candidates.extend(
+            [
+                str(project_root / "bin" / "stockfish.exe"),
+                "bin/stockfish.exe",
+                "../bin/stockfish.exe",
+                shutil.which("stockfish"),
+            ]
+        )
+    else:
+        candidates.extend(
+            [
+                shutil.which("stockfish"),
+                "/usr/games/stockfish",
+                "/usr/bin/stockfish",
+                "/usr/local/bin/stockfish",
+            ]
+        )
+
     for path in candidates:
         if path and os.path.isfile(path):
+            if os.name != "nt" and not os.access(path, os.X_OK):
+                try:
+                    os.chmod(path, 0o755)
+                except OSError:
+                    pass
             return path
+
     return None
 
 
@@ -571,8 +602,8 @@ def compute_caps2_accuracy(
 
 def analyze_game_with_stockfish(
     history: list[dict[str, Any]],
-    time_per_move: float = 0.30,
-    depth: int = 18,
+    time_per_move: float = 0.08,
+    depth: int = 12,
 ) -> dict[str, Any]:
     """
     Analisa a partida lance a lance com Stockfish.
@@ -611,8 +642,8 @@ def analyze_game_with_stockfish(
     opening_prefix: list[str] = []
 
     # Mais tempo por posição reduz oscilações de avaliação entre análises.
-    safe_time = max(0.25, min(float(time_per_move), 5.0))
-    safe_depth = max(14, min(int(depth), 30))
+    safe_time = max(0.05, min(float(time_per_move), 3.0))
+    safe_depth = max(10, min(int(depth), 24))
     limit = chess.engine.Limit(time=safe_time, depth=safe_depth)
 
     def evaluate_position(engine: chess.engine.SimpleEngine, position: chess.Board):
@@ -656,7 +687,7 @@ def analyze_game_with_stockfish(
         # Ajusta o hash sem assumir que toda compilação oferece as mesmas opções.
         try:
             if "Hash" in engine.options:
-                engine.configure({"Hash": 128})
+                engine.configure({"Hash": 32})
         except (chess.engine.EngineError, chess.engine.EngineTerminatedError):
             pass
 

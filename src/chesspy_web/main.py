@@ -47,6 +47,7 @@ if not sample_pgn_path.exists() and (BASE_DIR.parent / "friend_games.pgn").exist
     sample_pgn_path = BASE_DIR.parent / "friend_games.pgn"
 
 _sync_lock = threading.Lock()
+_analyze_lock = threading.Lock()
 _last_sync_at: datetime | None = None
 
 
@@ -71,8 +72,20 @@ app = FastAPI(
     version="1.2.1",
 )
 
+friend_bot = FriendStyleBot()
+_bot_ready = threading.Event()
+
+
+def _init_friend_bot_background() -> None:
+    global friend_bot
+    try:
+        friend_bot = _build_friend_bot()
+    finally:
+        _bot_ready.set()
+
+
 init_db()
-friend_bot = _build_friend_bot()
+threading.Thread(target=_init_friend_bot_background, daemon=True).start()
 
 
 def sync_friend_games(force: bool = False) -> dict:
@@ -315,7 +328,8 @@ def save_game_history(payload: SaveGameRequest):
 @app.post("/api/games/analyze")
 def analyze_saved_game(payload: AnalyzeGameRequest):
     try:
-        return analyze_game_with_stockfish(payload.history)
+        with _analyze_lock:
+            return analyze_game_with_stockfish(payload.history)
     except FileNotFoundError as exc:
         raise HTTPException(
             status_code=503,
@@ -399,6 +413,7 @@ def make_move(game_id: str, move_data: MoveRequest):
 
 @app.post("/api/games/{game_id}/bot-move")
 def make_bot_move(game_id: str):
+    _bot_ready.wait(timeout=15)
     game = get_game(game_id)
     board = game.board.board
 
