@@ -114,56 +114,88 @@ OPENING_BOOK_LINES: dict[tuple[str, ...], str] = {
 def find_stockfish_binary() -> str | None:
     env_path = os.getenv("STOCKFISH_PATH")
     if env_path and os.path.isfile(env_path):
+        if os.name != "nt" and not os.access(env_path, os.X_OK):
+            try:
+                os.chmod(env_path, 0o755)
+            except OSError:
+                pass
         if os.name == "nt" or not env_path.lower().endswith(".exe"):
             return env_path
 
-    project_root = Path(__file__).resolve().parents[1]
-    bin_dir = project_root / "bin"
-    candidates: list[str | None] = []
+    ignored_suffixes = (
+        ".tar",
+        ".gz",
+        ".xz",
+        ".zip",
+        ".archive",
+        ".md",
+        ".txt",
+        ".nnue",
+        ".py",
+        ".db",
+        ".json",
+    )
 
-    if bin_dir.is_dir():
+    resolved_file = Path(__file__).resolve()
+    search_roots: list[Path] = [
+        Path("/opt/render/project/src"),
+        Path.cwd(),
+        *resolved_file.parents,
+    ]
+
+    seen_roots: set[Path] = set()
+    for root in search_roots:
+        if root in seen_roots:
+            continue
+        seen_roots.add(root)
+
+        bin_dir = root / "bin"
+        if not bin_dir.is_dir():
+            continue
+
         for item in sorted(bin_dir.rglob("*")):
             if not item.is_file():
                 continue
             name_lower = item.name.lower()
-            if name_lower.endswith((".tar", ".gz", ".archive", ".md", ".txt", ".nnue")):
+            if name_lower.endswith(ignored_suffixes):
                 continue
+
             if os.name == "nt":
                 if name_lower.endswith(".exe") or "stockfish" in name_lower:
-                    candidates.append(str(item))
+                    return str(item)
             else:
-                if not name_lower.endswith(".exe") and (
-                    "stockfish" in name_lower or os.access(item, os.X_OK)
-                ):
-                    candidates.append(str(item))
+                if name_lower.endswith(".exe"):
+                    continue
+                if "stockfish" in name_lower or os.access(item, os.X_OK):
+                    if not os.access(item, os.X_OK):
+                        try:
+                            os.chmod(item, 0o755)
+                        except OSError:
+                            pass
+                    return str(item)
 
     if os.name == "nt":
-        candidates.extend(
-            [
-                str(project_root / "bin" / "stockfish.exe"),
-                "bin/stockfish.exe",
-                "../bin/stockfish.exe",
-                shutil.which("stockfish"),
-            ]
-        )
+        for fallback in (
+            "bin/stockfish.exe",
+            "../bin/stockfish.exe",
+            shutil.which("stockfish"),
+        ):
+            if fallback and os.path.isfile(fallback):
+                return fallback
     else:
-        candidates.extend(
-            [
-                shutil.which("stockfish"),
-                "/usr/games/stockfish",
-                "/usr/bin/stockfish",
-                "/usr/local/bin/stockfish",
-            ]
-        )
-
-    for path in candidates:
-        if path and os.path.isfile(path):
-            if os.name != "nt" and not os.access(path, os.X_OK):
-                try:
-                    os.chmod(path, 0o755)
-                except OSError:
-                    pass
-            return path
+        for fallback in (
+            shutil.which("stockfish"),
+            "/usr/games/stockfish",
+            "/usr/bin/stockfish",
+            "/usr/local/bin/stockfish",
+        ):
+            if fallback and os.path.isfile(fallback):
+                if not os.access(fallback, os.X_OK):
+                    try:
+                        os.chmod(fallback, 0o755)
+                    except OSError:
+                        pass
+                return fallback
 
     return None
 
@@ -246,7 +278,6 @@ def is_piece_sacrificed(
     test_board.push(move)
     opp_color = not mover_color
 
-    # Se a casa de destino é atacada pelo adversário e vale mais do que capturou
     if test_board.is_attacked_by(opp_color, move.to_square):
         defenders = len(test_board.attackers(mover_color, move.to_square))
         attackers = len(test_board.attackers(opp_color, move.to_square))
@@ -309,7 +340,6 @@ def generate_coach_commentary(
         else None
     )
 
-    # 1. Livro de aberturas
     if classification == "book":
         if opening_name:
             return (
@@ -318,21 +348,18 @@ def generate_coach_commentary(
             )
         return f"Lance teórico de abertura ({played_san}), mantendo o desenvolvimento equilibrado."
 
-    # 2. Xeque-mate aplicado no tabuleiro
     if board_after.is_checkmate():
         return (
             f"Xeque-mate! {played_san} encerra a partida "
             f"sem defesa possível para o rei adversário."
         )
 
-    # 3. Lance Brilhante
     if classification == "brilliant":
         return (
             f"Lance brilhante! Ao jogar {played_san}, você sacrifica material para abrir linhas "
             f"e criar uma iniciativa tática decisiva."
         )
 
-    # 4. Grande Lance (!)
     if classification == "great":
         forks = detect_fork_squares(board_after, played_move.to_square, mover_color)
         if forks:
@@ -347,7 +374,6 @@ def generate_coach_commentary(
             )
         return f"Grande lance! {played_san} é a única continuação precisa para sustentar a vantagem."
 
-    # 5. Erros, Imprecisões e Capivaradas -> comparar com best_move
     if classification in ("inaccuracy", "mistake", "blunder"):
         best_hint = (
             f" O melhor era {best_san}."
@@ -355,12 +381,10 @@ def generate_coach_commentary(
             else ""
         )
 
-        # Checa se permitiu mate forçado ao adversário
         player_cp_after = cp_after if mover_is_white else -cp_after
         if player_cp_after <= -9000:
             return f"Capivarada fatal: {played_san} permite sequência de xeque-mate forçado.{best_hint}"
 
-        # Checa se deixou a própria peça pendurada em prise na casa de destino
         if moving_piece and moving_piece.piece_type != chess.KING:
             attackers = board_after.attackers(opp_color, played_move.to_square)
             defenders = board_after.attackers(mover_color, played_move.to_square)
@@ -371,7 +395,6 @@ def generate_coach_commentary(
                     f"desprotegido(a) em {to_sq_name}.{best_hint}"
                 )
 
-        # Checa se o melhor lance sugerido era uma captura de peça livre/vantajosa ou promoção
         if best_move and best_move in board_before.legal_moves:
             if best_move.promotion:
                 return f"Você deixou passar a promoção de peão com {best_san}.{best_hint}"
@@ -385,7 +408,6 @@ def generate_coach_commentary(
                     f"em {cap_sq} jogando {best_san}."
                 )
 
-            # Checa se o melhor lance dava ataque duplo
             best_after = board_before.copy()
             best_after.push(best_move)
             best_forks = detect_fork_squares(best_after, best_move.to_square, mover_color)
@@ -401,7 +423,6 @@ def generate_coach_commentary(
             return f"Erro: {played_san} cede iniciativa e vantagem relevante ao adversário.{best_hint}"
         return f"Imprecisão: {played_san} enfraquece a coordenação das peças.{best_hint}"
 
-    # 6. Lances Bons (✓) / Excelentes / Melhores
     if board_before.is_castling(played_move):
         return f"Bom lance ({played_san}): coloca o rei em segurança e conecta as torres."
 
@@ -434,29 +455,9 @@ def classify_move_with_expected_points(
     player_expected_before: float,
     player_expected_after: float,
 ) -> str:
-    """
-    Classifica os lances pela perda de pontos esperados.
-
-    Faixas:
-        Best: lance escolhido pela engine
-        Excellent: perda inferior ou igual a 2%
-        Good: perda até 5%
-        Inaccuracy: perda até 10%
-        Mistake: perda até 20%
-        Blunder: perda superior a 20%
-
-    Brilliant e Great possuem condições adicionais.
-    """
-
-    loss = max(
-        0.0,
-        min(1.0, float(expected_points_loss))
-    )
-
+    loss = max(0.0, min(1.0, float(expected_points_loss)))
     loss_percent = loss * 100.0
 
-    # Brilhante: sacrifício sólido e praticamente tão bom
-    # quanto a melhor escolha da engine.
     if (
         sacrificed
         and (is_best_move or loss_percent <= 1.0)
@@ -465,14 +466,10 @@ def classify_move_with_expected_points(
     ):
         return "brilliant"
 
-    # Grande lance: melhor escolha em uma posição crítica,
-    # ou lance cuja alternativa principal perde muitos pontos.
     critical_turnaround = (
-        player_expected_before <= 0.40
-        and player_expected_after >= 0.50
+        player_expected_before <= 0.40 and player_expected_after >= 0.50
     ) or (
-        player_expected_before <= 0.50
-        and player_expected_after >= 0.60
+        player_expected_before <= 0.50 and player_expected_after >= 0.60
     )
 
     only_good_move = second_best_expected_points_gap >= 0.10
@@ -480,15 +477,12 @@ def classify_move_with_expected_points(
     if is_best_move and (only_good_move or critical_turnaround):
         return "great"
 
-    # Lances de abertura reconhecidos.
     if is_book_move and loss_percent <= 2.0:
         return "book"
 
-    # Melhor lance da engine.
     if is_best_move:
         return "best"
 
-    # Classificação pela perda de pontos esperados.
     if loss_percent <= 2.0:
         return "excellent"
 
@@ -508,17 +502,6 @@ def compute_caps2_accuracy(
     move_entries: list[dict[str, float]],
     win_percent_history: list[float],
 ) -> float:
-    """
-    Calcula a precisão geral do jogador.
-
-    Combina:
-    - Precisão individual de cada lance;
-    - Média harmônica;
-    - Média ponderada pela volatilidade da posição.
-
-    A precisão individual utiliza a diferença de Win%.
-    """
-
     if not move_entries:
         return 100.0
 
@@ -527,10 +510,7 @@ def compute_caps2_accuracy(
     for entry in move_entries:
         loss = max(
             0.0,
-            min(
-                100.0,
-                float(entry.get("expected_points_loss", 0.0)) * 100.0
-            )
+            min(100.0, float(entry.get("expected_points_loss", 0.0)) * 100.0),
         )
 
         if loss <= 0:
@@ -546,16 +526,13 @@ def compute_caps2_accuracy(
         accuracy = max(0.0, min(100.0, accuracy))
         move_accuracies.append(accuracy)
 
-    # Média harmônica.
-        if any(value <= 0 for value in move_accuracies):
-            harmonic_mean = 0.0
-        else:
-            harmonic_mean = (
-                len(move_accuracies)
-                / sum(1.0 / value for value in move_accuracies)
-            )
+    if any(value <= 0 for value in move_accuracies):
+        harmonic_mean = 0.0
+    else:
+        harmonic_mean = len(move_accuracies) / sum(
+            1.0 / value for value in move_accuracies
+        )
 
-    # Média ponderada pela volatilidade.
     weights: list[float] = []
 
     for entry in move_entries:
@@ -570,12 +547,7 @@ def compute_caps2_accuracy(
             deviation = 0.5
         else:
             mean = sum(window) / len(window)
-
-            variance = sum(
-                (value - mean) ** 2
-                for value in window
-            ) / len(window)
-
+            variance = sum((value - mean) ** 2 for value in window) / len(window)
             deviation = math.sqrt(variance)
 
         weight = max(0.5, min(12.0, deviation))
@@ -588,20 +560,11 @@ def compute_caps2_accuracy(
 
     total_weight = sum(weights)
 
-    weighted_mean = (
-        weighted_total / total_weight
-        if total_weight > 0
-        else 0.0
-    )
+    weighted_mean = weighted_total / total_weight if total_weight > 0 else 0.0
 
-    final_accuracy = (
-        harmonic_mean + weighted_mean
-    ) / 2.0
+    final_accuracy = (harmonic_mean + weighted_mean) / 2.0
 
-    return round(
-        max(0.0, min(100.0, final_accuracy)),
-        1
-    )
+    return round(max(0.0, min(100.0, final_accuracy)), 1)
 
 
 def analyze_game_with_stockfish(
@@ -609,13 +572,6 @@ def analyze_game_with_stockfish(
     time_per_move: float = 0.08,
     depth: int = 12,
 ) -> dict[str, Any]:
-    """
-    Analisa a partida lance a lance com Stockfish.
-
-    Cada posição é avaliada na perspectiva das Brancas para manter
-    o formato esperado pelo frontend. A perda de avaliação de cada
-    lance, entretanto, é calculada na perspectiva do jogador que moveu.
-    """
     binary = find_stockfish_binary()
     if not binary:
         raise FileNotFoundError(
@@ -645,14 +601,12 @@ def analyze_game_with_stockfish(
     per_ply: list[dict[str, Any]] = []
     opening_prefix: list[str] = []
 
-    # Mais tempo por posição reduz oscilações de avaliação entre análises.
     safe_time = max(0.05, min(float(time_per_move), 3.0))
     safe_depth = max(10, min(int(depth), 24))
     limit = chess.engine.Limit(time=safe_time, depth=safe_depth)
 
     def evaluate_position(engine: chess.engine.SimpleEngine, position: chess.Board):
         if position.is_checkmate():
-            # O lado a jogar está em mate.
             white_cp = -10000 if position.turn == chess.WHITE else 10000
             mate_text = "-M0" if white_cp < 0 else "+M0"
             return white_cp, mate_text, None, 0, 0.0
@@ -676,7 +630,6 @@ def analyze_game_with_stockfish(
         if len(infos) > 1:
             second_cp, _ = score_to_white_cp_and_text(infos[1]["score"])
 
-        # A diferença é medida do ponto de vista do jogador que está para mover.
         sign = 1 if position.turn == chess.WHITE else -1
         best_cp_for_turn = white_cp * sign
         second_cp_for_turn = second_cp * sign
@@ -688,7 +641,6 @@ def analyze_game_with_stockfish(
         return white_cp, eval_text, best_move, second_gap, expected_gap
 
     with chess.engine.SimpleEngine.popen_uci(binary) as engine:
-        # Ajusta o hash sem assumir que toda compilação oferece as mesmas opções.
         try:
             if "Hash" in engine.options:
                 engine.configure({"Hash": 32})
@@ -698,9 +650,7 @@ def analyze_game_with_stockfish(
         cp_before, text_before, best_before, gap_before, ep_gap_before = evaluate_position(
             engine, board
         )
-        win_percent_history = [
-        cp_to_expected_points(cp_before) * 100.0
-    ]
+        win_percent_history = [cp_to_expected_points(cp_before) * 100.0]
 
         def move_payload(move: chess.Move | None):
             if move is None:
@@ -768,7 +718,6 @@ def analyze_game_with_stockfish(
                     engine, board
                 )
 
-            # Compara a chance esperada do mesmo jogador antes e depois do lance.
             player_cp_before = cp_before * mover_sign
             player_cp_after = cp_after * mover_sign
             player_expected_before = cp_to_expected_points(player_cp_before)
@@ -798,9 +747,7 @@ def analyze_game_with_stockfish(
                 "ply": ply,
             })
 
-            win_percent_history.append(
-                cp_to_expected_points(cp_after) * 100.0
-            )
+            win_percent_history.append(cp_to_expected_points(cp_after) * 100.0)
 
             commentary = generate_coach_commentary(
                 board_before=board_before,
@@ -859,7 +806,6 @@ def analyze_game_with_stockfish(
             "white": white_accuracy,
             "black": black_accuracy,
         },
-        # Rating não é inferido a partir de uma única partida.
         "estimatedRating": {
             "white": None,
             "black": None,
