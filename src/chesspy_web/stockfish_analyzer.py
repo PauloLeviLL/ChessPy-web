@@ -122,15 +122,19 @@ def find_stockfish_binary() -> str | None:
     candidates: list[str | None] = []
 
     if bin_dir.is_dir():
-        for item in sorted(bin_dir.iterdir()):
+        for item in sorted(bin_dir.rglob("*")):
             if not item.is_file():
                 continue
             name_lower = item.name.lower()
+            if name_lower.endswith((".tar", ".gz", ".archive", ".md", ".txt", ".nnue")):
+                continue
             if os.name == "nt":
-                if name_lower.endswith(".exe") or name_lower.startswith("stockfish"):
+                if name_lower.endswith(".exe") or "stockfish" in name_lower:
                     candidates.append(str(item))
             else:
-                if name_lower.startswith("stockfish") and not name_lower.endswith(".exe"):
+                if not name_lower.endswith(".exe") and (
+                    "stockfish" in name_lower or os.access(item, os.X_OK)
+                ):
                     candidates.append(str(item))
 
     if os.name == "nt":
